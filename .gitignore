@@ -1,0 +1,20 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+
+# Node
+frontend/node_modules/
+
+# Vite
+frontend/dist/
+
+# VSCode
+.vscode/
+
+# Environment
+.env
+
+# uploads（可选）
+uploads/
+backend/uploads/
