@@ -45,9 +45,20 @@ class Article(Base):
         
     )
 
+    category_id = Column(
+        Integer,
+        ForeignKey("categories.id"),
+        nullable=True,
+    )
+
     author = relationship(
     "User",
     back_populates="articles"
+    )
+
+    category = relationship(
+        "Category",
+        back_populates="articles",
     )
 
     comments = relationship(

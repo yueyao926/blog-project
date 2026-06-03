@@ -37,3 +37,8 @@ class Category(Base):
         "Category",
         back_populates="parent",
     )
+
+    articles = relationship(
+        "Article",
+        back_populates="category",
+    )
