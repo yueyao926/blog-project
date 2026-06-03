@@ -6,9 +6,11 @@ from app.routers import users
 from app.routers import articles
 from app.routers import comments
 from app.routers import likes
+from app.routers import category
 from app.models.article import Article
 from app.models.comment import Comment
 from app.models.article_like import ArticleLike
+from app.models.category import Category
 
 app = FastAPI()
 
@@ -34,6 +36,7 @@ app.include_router(users.router)
 app.include_router(articles.router)
 app.include_router(comments.router)
 app.include_router(likes.router)
+app.include_router(category.router)
 @app.get("/")
 def root():
     return {"message": "博客后端启动成功"}
