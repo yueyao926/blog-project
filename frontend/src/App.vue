@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue"
+import { computed, ref, onMounted, onUnmounted } from "vue"
 import { useRouter } from "vue-router"
 
 const router = useRouter()
@@ -10,6 +10,20 @@ const isLoggedIn = computed(() => {
 
 const isAdmin = computed(() => {
   return localStorage.getItem("is_admin") === "true"
+})
+
+const navScrolled = ref(false)
+
+const onScroll = () => {
+  navScrolled.value = window.scrollY > 20
+}
+
+onMounted(() => {
+  window.addEventListener("scroll", onScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener("scroll", onScroll)
 })
 
 const logout = () => {
@@ -26,20 +40,9 @@ const logout = () => {
 
 <template>
   <div>
-    <!-- 顶部导航栏 -->
     <nav
-      class="
-        fixed
-        top-0
-        left-0
-        w-full
-        z-50
-        bg-white/30
-        backdrop-blur-lg
-        border-b
-        border-white/20
-        shadow-sm
-      "
+      class="nav-bar"
+      :class="{ scrolled: navScrolled }"
     >
       <div
         class="
@@ -52,20 +55,13 @@ const logout = () => {
           justify-between
         "
       >
-        <!-- 左侧 Logo -->
         <div
-          class="
-            text-2xl
-            font-bold
-            text-gray-800
-            cursor-pointer
-          "
+          class="nav-logo"
           @click="router.push('/')"
         >
-          Yueyao Blog
+          Yueyao <span>Blog</span>
         </div>
 
-        <!-- 右侧菜单 -->
         <div
           class="
             flex
@@ -75,73 +71,39 @@ const logout = () => {
         >
           <router-link
             to="/"
-            class="
-              text-gray-700
-              hover:text-blue-500
-              transition
-            "
+            class="nav-link"
           >
             首页
           </router-link>
 
-          <!-- 管理员 -->
           <router-link
             v-if="isAdmin"
             to="/admin"
-            class="
-              text-gray-700
-              hover:text-blue-500
-              transition
-            "
+            class="nav-link"
           >
             后台管理
           </router-link>
 
-          <!-- 未登录 -->
           <template v-if="!isLoggedIn">
             <router-link
               to="/login"
-              class="
-                text-gray-700
-                hover:text-blue-500
-                transition
-              "
+              class="nav-link"
             >
               登录
             </router-link>
 
             <router-link
               to="/register"
-              class="
-                px-4
-                py-2
-                rounded-xl
-                bg-gradient-to-r
-                from-blue-500
-                to-indigo-500
-                text-white
-                shadow-md
-                hover:scale-105
-                transition
-              "
+              class="btn-primary"
             >
               注册
             </router-link>
           </template>
 
-          <!-- 已登录 -->
           <button
             v-if="isLoggedIn"
             @click="logout"
-            class="
-              px-4
-              py-2
-              rounded-xl
-              bg-red-500
-              text-white
-              hover:bg-red-600
-              transition
-            "
+            class="btn-danger"
           >
             退出登录
           </button>
@@ -149,7 +111,6 @@ const logout = () => {
       </div>
     </nav>
 
-    <!-- 页面内容 -->
     <div class="pt-16">
       <router-view />
     </div>

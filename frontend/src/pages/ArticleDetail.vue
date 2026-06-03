@@ -1,4 +1,3 @@
-```vue
 <script setup>
 import { ref, onMounted } from "vue"
 import { useRoute } from "vue-router"
@@ -107,7 +106,6 @@ const toggleLike = async () => {
 const renderMarkdown = (content) => {
   if (!content) return ""
 
-  // 替换所有图片URL中的空格
   const fixedContent = content.replace(
     /!\[([^\]]*)\]\(([^)]+)\)/g,
     (_, alt, url) => {
@@ -122,72 +120,47 @@ const renderMarkdown = (content) => {
 </script>
 
 <template>
-  <div
-    class="
-      min-h-screen
-      bg-gradient-to-br
-      from-slate-100
-      to-blue-100
-      py-10
-      px-4
-    "
-  >
+  <div class="page-bg py-10 px-4">
     <div
       v-if="article"
       class="
+        relative
+        z-10
         max-w-4xl
         mx-auto
-        bg-white/70
-        backdrop-blur-md
-        rounded-3xl
-        shadow-xl
+        glass-card
         p-10
+        animate-fade-up
       "
     >
-      <!-- 标题 -->
       <h1
         class="
+          font-display
           text-5xl
           font-bold
-          text-gray-800
+          text-[#6b5d4d]
           leading-tight
         "
       >
         {{ article.title }}
       </h1>
 
-      <div
-        class="
-            mt-4
-            flex
-            items-center
-            gap-4
-        "
-        >
-
+      <div class="mt-5 flex items-center gap-4">
         <button
-            @click="toggleLike"
-            class="
-            px-4
-            py-2
-            rounded-xl
-            bg-pink-500
-            text-white
-            hover:bg-pink-600
-            "
+          @click="toggleLike"
+          class="like-btn btn-like"
         >
-            👍 {{ likeCount }}
+          👍 {{ likeCount }}
         </button>
+      </div>
 
-    </div>
-
-      <!-- 作者 -->
       <div
         class="
           mt-6
-          text-gray-500
+          text-[#c4b498]
           flex
           gap-6
+          text-sm
         "
       >
         <span>
@@ -201,15 +174,8 @@ const renderMarkdown = (content) => {
         </span>
       </div>
 
-      <!-- 分割线 -->
-      <div
-        class="
-          border-t
-          my-8
-        "
-      ></div>
+      <div class="section-divider"></div>
 
-      <!-- markdown 内容 -->
       <div
         class="
           prose
@@ -220,68 +186,47 @@ const renderMarkdown = (content) => {
       ></div>
 
       <div class="mt-16">
-
-        <h2 class="text-3xl font-bold mb-6">
-            评论区
+        <h2
+          class="
+            font-display
+            text-3xl
+            font-bold
+            mb-6
+            text-[#6b5d4d]
+          "
+        >
+          评论区
         </h2>
 
         <textarea
-            v-model="commentContent"
-            placeholder="写点什么..."
-            class="
-            w-full
-            border
-            rounded-xl
-            p-4
-            mb-4
-            "
+          v-model="commentContent"
+          placeholder="写点什么..."
+          class="input-field mb-4 resize-none"
+          rows="4"
         />
 
         <button
-            @click="createComment"
-            class="
-            bg-black
-            text-white
-            px-6
-            py-3
-            rounded-xl
-            "
+          @click="createComment"
+          class="btn-dark px-6 py-3"
         >
-            发表评论
+          发表评论
         </button>
-
       </div>
 
       <div
-        v-for="comment in comments"
+        v-for="(comment, index) in comments"
         :key="comment.id"
-        class="
-            mt-6
-            border-b
-            pb-4
-        "
-        >
-
-        <div
-            class="
-            font-bold
-            text-gray-800
-            "
-        >
-            {{ comment.user.username }}
+        class="comment-card mt-4"
+        :style="{ animationDelay: `${index * 0.06}s` }"
+      >
+        <div class="font-bold text-[#6b5d4d]">
+          {{ comment.user.username }}
         </div>
 
-        <div
-            class="
-            text-gray-600
-            mt-2
-            "
-        >
-            {{ comment.content }}
+        <div class="text-[#a89478] mt-2 leading-relaxed">
+          {{ comment.content }}
         </div>
-
       </div>
     </div>
   </div>
 </template>
-```

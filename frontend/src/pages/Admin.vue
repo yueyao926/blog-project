@@ -17,7 +17,6 @@ const summary = ref("")
 onMounted(async () => {
   const token = localStorage.getItem("token")
 
-  // 没登录
   if (!token) {
     alert("请先登录")
 
@@ -27,10 +26,8 @@ onMounted(async () => {
   }
 
   try {
-    // 获取当前用户
     const response = await api.get("/me")
 
-    // 不是管理员
     if (!response.data.is_admin) {
       alert("你不是管理员")
 
@@ -124,52 +121,66 @@ const createArticle = async () => {
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto p-6">
-    <h1>后台管理</h1>
+  <div class="page-bg">
+    <div class="admin-page relative z-10">
+      <div class="glass-card admin-form p-8">
+        <h1>后台管理</h1>
 
-    <input
-      v-model="title"
-      placeholder="文章标题"
-      class="w-full p-3 rounded-xl border mb-4"
-    />
+        <div class="space-y-5">
+          <div>
+            <label class="admin-label">文章标题</label>
+            <input
+              v-model="title"
+              placeholder="文章标题"
+              class="input-field"
+            />
+          </div>
 
-    <br /><br />
+          <div>
+            <label class="admin-label">文章摘要</label>
+            <textarea
+              v-model="summary"
+              placeholder="文章摘要"
+              rows="3"
+              class="input-field resize-none"
+            />
+          </div>
 
-    <textarea
-      v-model="summary"
-      placeholder="文章摘要"
-      rows="3"
-      class="w-full p-3 rounded-xl border mb-4"
-    />
+          <div>
+            <label class="admin-label">封面图片 URL</label>
+            <input
+              v-model="cover_image"
+              placeholder="封面图片URL"
+              class="input-field"
+            />
+          </div>
 
-    <input
-      v-model="cover_image"
-      placeholder="封面图片URL"
-      class="w-full p-3 rounded-xl border mb-4"
-    />
+          <div>
+            <label class="admin-label">上传封面</label>
+            <input
+              type="file"
+              @change="uploadImage"
+              class="file-input"
+            />
+          </div>
 
-    <br /><br />
+          <div>
+            <label class="admin-label">正文内容</label>
+            <MdEditor
+              v-model="content"
+              height="500px"
+              @onUploadImg="onUploadImg"
+            />
+          </div>
 
-    <input
-      type="file"
-      @change="uploadImage"
-    />
-
-    <br /><br />
-
-   <MdEditor
-      v-model="content"
-      height="500px"
-      @onUploadImg="onUploadImg"
-    />
-
-    <br /><br />
-
-    <button
-      @click="createArticle"
-      class="bg-black text-white px-6 py-3 rounded-xl"
-    >
-      发布文章
-    </button>
+          <button
+            @click="createArticle"
+            class="btn-dark px-8 py-3"
+          >
+            发布文章
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

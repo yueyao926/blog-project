@@ -26,7 +26,6 @@ const login = async () => {
       response.data.access_token
     )
 
-    // 给后续请求带 token
     api.defaults.headers.common[
       "Authorization"
     ] = `Bearer ${response.data.access_token}`
@@ -50,26 +49,45 @@ const login = async () => {
 </script>
 
 <template>
-  <div>
-    <h1>登录</h1>
+  <div class="page-bg auth-page">
+    <div class="auth-card glass-card">
+      <h1>登录</h1>
 
-    <input
-      v-model="email"
-      placeholder="邮箱"
-    />
+      <div class="form-group">
+        <label>邮箱</label>
+        <input
+          v-model="email"
+          placeholder="请输入邮箱"
+          class="input-field"
+        />
+      </div>
 
-    <br /><br />
+      <div class="form-group">
+        <label>密码</label>
+        <input
+          v-model="password"
+          type="password"
+          placeholder="请输入密码"
+          class="input-field"
+        />
+      </div>
 
-    <input
-      v-model="password"
-      type="password"
-      placeholder="密码"
-    />
+      <button
+        @click="login"
+        class="btn-primary w-full py-3 mt-2"
+      >
+        登录
+      </button>
 
-    <br /><br />
-
-    <button @click="login">
-      登录
-    </button>
+      <p class="text-center text-sm text-[#c4b498] mt-6">
+        还没有账号？
+        <router-link
+          to="/register"
+          class="link-accent"
+        >
+          立即注册
+        </router-link>
+      </p>
+    </div>
   </div>
 </template>

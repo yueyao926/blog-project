@@ -1,4 +1,3 @@
-```vue
 <script setup>
 import { ref, onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
@@ -135,80 +134,66 @@ const updateArticle = async () => {
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto p-6">
+  <div class="page-bg">
+    <div class="admin-page relative z-10">
+      <div class="glass-card admin-form p-8">
+        <h1>编辑文章</h1>
 
-    <h1 class="text-3xl font-bold mb-6">
-      编辑文章
-    </h1>
+        <div class="space-y-5">
+          <div>
+            <label class="admin-label">文章标题</label>
+            <input
+              v-model="title"
+              placeholder="文章标题"
+              class="input-field"
+            />
+          </div>
 
-    <!-- 标题 -->
-    <input
-      v-model="title"
-      placeholder="文章标题"
-      class="
-        w-full
-        p-3
-        rounded-xl
-        border
-        mb-4
-      "
-    />
+          <div>
+            <label class="admin-label">文章摘要</label>
+            <textarea
+              v-model="summary"
+              placeholder="文章摘要"
+              rows="3"
+              class="input-field resize-none"
+            />
+          </div>
 
-    <!-- 摘要 -->
-    <textarea
-      v-model="summary"
-      placeholder="文章摘要"
-      rows="3"
-      class="
-        w-full
-        p-3
-        rounded-xl
-        border
-        mb-4
-      "
-    />
+          <div>
+            <label class="admin-label">封面图片 URL</label>
+            <input
+              v-model="cover_image"
+              placeholder="封面图片URL"
+              class="input-field"
+            />
+          </div>
 
-    <!-- 封面图 -->
-    <input
-      v-model="cover_image"
-      placeholder="封面图片URL"
-      class="
-        w-full
-        p-3
-        rounded-xl
-        border
-        mb-4
-      "
-    />
+          <div>
+            <label class="admin-label">上传封面</label>
+            <input
+              type="file"
+              @change="uploadImage"
+              class="file-input"
+            />
+          </div>
 
-    <!-- 上传图片 -->
-    <input
-      type="file"
-      @change="uploadImage"
-      class="mb-6"
-    />
+          <div>
+            <label class="admin-label">正文内容</label>
+            <MdEditor
+              v-model="content"
+              height="500px"
+              @onUploadImg="onUploadImg"
+            />
+          </div>
 
-    <!-- Markdown 编辑器 -->
-    <MdEditor
-      v-model="content"
-      height="500px"
-      @onUploadImg="onUploadImg"
-    />
-
-    <!-- 保存按钮 -->
-    <button
-      @click="updateArticle"
-      class="
-        mt-6
-        bg-black
-        text-white
-        px-6
-        py-3
-        rounded-xl
-      "
-    >
-      保存修改
-    </button>
+          <button
+            @click="updateArticle"
+            class="btn-dark px-8 py-3"
+          >
+            保存修改
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
-```

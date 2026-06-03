@@ -17,6 +17,14 @@ const isAdmin = ref(false)
 
 const keyword = ref("")
 
+const particles = Array.from({ length: 12 }, (_, i) => ({
+  id: i,
+  left: `${Math.random() * 100}%`,
+  size: `${Math.random() * 5 + 3}px`,
+  duration: `${Math.random() * 8 + 10}s`,
+  delay: `${Math.random() * 10}s`,
+}))
+
 const fetchArticles = async () => {
 
   const response = await api.get(
@@ -67,68 +75,56 @@ const deleteArticle = async (id) => {
 </script>
 
 <template>
-  <div
-    class="
-      min-h-screen
-      bg-gradient-to-br
-      from-slate-100
-      to-blue-100
-    "
-  >
+  <div class="page-bg">
     <!-- 顶部大图 -->
-    <div
-      class="
-        h-[320px]
-        bg-cover
-        bg-center
-        relative
-      "
-      style="
-        background-image:
-        url('https://images.unsplash.com/photo-1506744038136-46273834b3fb');
-      "
-    >
-      <!-- 黑色遮罩 -->
+    <div class="hero-banner">
       <div
-        class="
-          absolute
-          inset-0
-          bg-black/40
+        class="hero-bg"
+        style="
+          background-image:
+          url('https://images.unsplash.com/photo-1501854140801-50d01698950b');
         "
       ></div>
 
-      <!-- 标题 -->
-      <div
-        class="
-          relative
-          z-10
-          h-full
-          flex
-          flex-col
-          justify-center
-          items-center
-          text-white
-        "
-      >
-        <h1
-          class="
-            text-6xl
-            font-bold
-            drop-shadow-lg
-          "
-        >
+      <div class="hero-overlay"></div>
+
+      <div class="particles">
+        <span
+          v-for="p in particles"
+          :key="p.id"
+          class="particle"
+          :style="{
+            left: p.left,
+            width: p.size,
+            height: p.size,
+            animationDuration: p.duration,
+            animationDelay: p.delay,
+          }"
+        ></span>
+      </div>
+
+      <div class="hero-content">
+        <h1 class="hero-title">
           Welcome to Yueyao's Blog
         </h1>
 
-        <p class="mt-4 text-xl">
+        <p class="hero-subtitle">
           And miles to go before I sleep
         </p>
+      </div>
+
+      <div class="hero-scroll-hint">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12l7 7 7-7"/>
+        </svg>
       </div>
     </div>
 
     <!-- 内容区域 -->
     <div
       class="
+        relative
+        z-10
         max-w-7xl
         mx-auto
         px-6
@@ -139,62 +135,54 @@ const deleteArticle = async (id) => {
       "
     >
       <!-- 左侧个人信息 -->
-      <div
-        class="
-          col-span-3
-        "
-      >
+      <div class="col-span-3">
         <div
           class="
-            bg-white/70
-            backdrop-blur-md
-            rounded-3xl
+            glass-card
+            sidebar-card
             p-6
-            shadow-lg
             sticky
-            top-6
+            top-24
+            animate-fade-up
           "
         >
-          <!-- 头像 -->
-          <img
-            src="https://i.pravatar.cc/300"
-            class="
-              w-32
-              h-32
-              rounded-full
-              mx-auto
-              object-cover
-              border-4
-              border-white
-              shadow-lg
-            "
-          />
+          <span class="meng-deco meng-deco-1">✿</span>
+          <span class="meng-deco meng-deco-2">+</span>
+          <span class="meng-deco meng-deco-3">+</span>
+          <span class="meng-deco meng-deco-4">✿</span>
 
-          <!-- 名字 -->
+          <div class="avatar-frame">
+            <img
+              src="/meng-er-avatar.png"
+              alt="Yueyao"
+            />
+          </div>
+
           <h2
             class="
+              font-display
               text-2xl
               font-bold
               text-center
-              mt-4
+              mt-5
+              text-[#6b5d4d]
             "
           >
             Yueyao
           </h2>
 
-          <!-- 简介 -->
           <p
             class="
-              text-gray-600
+              text-[#a89478]
               text-center
               mt-3
               leading-7
+              text-sm
             "
           >
             你好呀，欢迎来到我的空间~
           </p>
 
-          <!-- 按钮 -->
           <div
             class="
               mt-6
@@ -206,138 +194,106 @@ const deleteArticle = async (id) => {
             <a
               href="https://github.com"
               target="_blank"
-              class="
-                px-4
-                py-2
-                rounded-xl
-                bg-black
-                text-white
-                hover:scale-105
-                transition
-              "
+              class="btn-dark"
             >
               GitHub
             </a>
 
             <a
               href="#"
-              class="
-                px-4
-                py-2
-                rounded-xl
-                bg-blue-500
-                text-white
-                hover:scale-105
-                transition
-              "
+              class="btn-primary"
             >
               关于我
             </a>
           </div>
 
-          <!-- 统计 -->
-          <div
-            class="
-              mt-8
-              border-t
-              pt-6
-              space-y-4
-              text-gray-700
-            "
-          >
-            <div class="flex justify-between">
-              <span>文章</span>
-              <span>{{ articles.length }}</span>
+          <div class="section-divider"></div>
+
+          <div class="space-y-1 text-[#a89478] text-sm">
+            <div class="stat-item">
+              <span><span class="stat-icon">✿</span>文章</span>
+              <span class="stat-value">{{ articles.length }}</span>
             </div>
 
-            <div class="flex justify-between">
-              <span>分类</span>
-              <span>1</span>
+            <div class="stat-item">
+              <span><span class="stat-icon">+</span>分类</span>
+              <span class="stat-value">1</span>
             </div>
 
-            <div class="flex justify-between">
-              <span>标签</span>
-              <span>3</span>
+            <div class="stat-item">
+              <span><span class="stat-icon">✿</span>标签</span>
+              <span class="stat-value">3</span>
             </div>
           </div>
+
+          <p class="sidebar-footer">
+            学会放松 · 奇迹自会悄悄发生
+          </p>
         </div>
       </div>
 
       <!-- 右侧文章 -->
-      <div
-        class="
-          col-span-9
-          space-y-8
-        "
-      >
+      <div class="col-span-9 space-y-8">
+        <div class="search-box">
+          <svg
+            class="search-icon"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
 
-        <input
-          v-model="keyword"
-          placeholder="搜索文章标题..."
-          class="
-            w-full
-            p-4
-            rounded-2xl
-            border
-            bg-white
-            shadow
-          "
-        />
+          <input
+            v-model="keyword"
+            placeholder="搜索文章标题..."
+            class="input-field shadow-sm"
+          />
+        </div>
 
         <div
-          v-for="article in articles"
+          v-for="(article, index) in articles"
           :key="article.id"
-          class="
-            bg-white/70
-            backdrop-blur-md
-            rounded-3xl
-            p-8
-            shadow-lg
-            hover:shadow-2xl
-            transition
-            duration-300
-          "
+          class="glass-card article-card p-8"
+          :style="{ animationDelay: `${index * 0.08}s` }"
+        >
+          <div
+            v-if="article.cover_image"
+            class="overflow-hidden cover-wrap mb-6"
           >
-            <!-- 封面图 -->
             <img
-              v-if="article.cover_image"
               :src="article.cover_image"
-              class="
-                w-full
-                h-64
-                object-cover
-                rounded-2xl
-                mb-6
-              "
+              class="cover-img w-full h-64 object-cover"
             />
+          </div>
 
-            <!-- 标题 -->
-            <h2
-              @click="router.push(`/articles/${article.id}`)"
-              class="
-                text-3xl
-                font-bold
-                text-gray-800
-                cursor-pointer
-                hover:text-blue-600
-                transition
-              "
-            >
-              {{ article.title }}
-            </h2>
+          <h2
+            @click="router.push(`/articles/${article.id}`)"
+            class="
+              article-title
+              font-display
+              text-3xl
+              font-bold
+              text-[#6b5d4d]
+            "
+          >
+            {{ article.title }}
+          </h2>
 
-          <!-- 内容 -->
           <p
             class="
               mt-4
-              text-gray-600
+              text-[#a89478]
               leading-8
             "
           >
             {{ article.summary }}
           </p>
 
-          <!-- 底部 -->
           <div
             class="
               mt-6
@@ -346,18 +302,11 @@ const deleteArticle = async (id) => {
               items-center
             "
           >
-            <!-- 作者 -->
-            <div
-              class="
-                text-sm
-                text-gray-500
-              "
-            >
+            <div class="text-sm text-[#c4b498]">
               作者：
               {{ article.author?.username }}
             </div>
 
-            <!-- 管理员按钮 -->
             <div
               v-if="isAdmin"
               class="flex gap-3"
@@ -368,30 +317,14 @@ const deleteArticle = async (id) => {
                     `/edit/${article.id}`
                   )
                 "
-                class="
-                  px-4
-                  py-2
-                  rounded-xl
-                  bg-blue-500
-                  text-white
-                  hover:bg-blue-600
-                  transition
-                "
+                class="btn-primary"
               >
                 编辑
               </button>
 
               <button
                 @click="deleteArticle(article.id)"
-                class="
-                  px-4
-                  py-2
-                  rounded-xl
-                  bg-red-500
-                  text-white
-                  hover:bg-red-600
-                  transition
-                "
+                class="btn-danger"
               >
                 删除
               </button>

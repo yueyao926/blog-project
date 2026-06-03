@@ -29,33 +29,54 @@ const register = async () => {
 </script>
 
 <template>
-  <div>
-    <h1>注册</h1>
+  <div class="page-bg auth-page">
+    <div class="auth-card glass-card">
+      <h1>注册</h1>
 
-    <input
-      v-model="username"
-      placeholder="用户名"
-    />
+      <div class="form-group">
+        <label>用户名</label>
+        <input
+          v-model="username"
+          placeholder="请输入用户名"
+          class="input-field"
+        />
+      </div>
 
-    <br /><br />
+      <div class="form-group">
+        <label>邮箱</label>
+        <input
+          v-model="email"
+          placeholder="请输入邮箱"
+          class="input-field"
+        />
+      </div>
 
-    <input
-      v-model="email"
-      placeholder="邮箱"
-    />
+      <div class="form-group">
+        <label>密码</label>
+        <input
+          v-model="password"
+          type="password"
+          placeholder="请输入密码"
+          class="input-field"
+        />
+      </div>
 
-    <br /><br />
+      <button
+        @click="register"
+        class="btn-primary w-full py-3 mt-2"
+      >
+        注册
+      </button>
 
-    <input
-      v-model="password"
-      type="password"
-      placeholder="密码"
-    />
-
-    <br /><br />
-
-    <button @click="register">
-      注册
-    </button>
+      <p class="text-center text-sm text-[#c4b498] mt-6">
+        已有账号？
+        <router-link
+          to="/login"
+          class="link-accent"
+        >
+          去登录
+        </router-link>
+      </p>
+    </div>
   </div>
 </template>
