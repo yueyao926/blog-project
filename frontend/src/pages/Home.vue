@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from "vue"
 import { useRouter } from "vue-router"
 import api from "../services/api"
+import { getCategories } from "../api/category"
 
 const removeMarkdown = (text) => {
   return text
@@ -12,6 +13,10 @@ const removeMarkdown = (text) => {
 const router = useRouter()
 
 const articles = ref([])
+
+const categories = ref([])
+
+const categoryMap = ref({})
 
 const isAdmin = ref(false)
 
@@ -39,9 +44,37 @@ const fetchArticles = async () => {
   articles.value = response.data
 }
 
+const fetchCategories = async () => {
+  try {
+    const response = await getCategories()
+    categories.value = response.data
+
+    categoryMap.value = Object.fromEntries(
+      response.data.map((cat) => [cat.id, cat.name])
+    )
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const getCategoryName = (article) => {
+  if (article.category?.name) {
+    return article.category.name
+  }
+
+  if (article.category_id && categoryMap.value[article.category_id]) {
+    return categoryMap.value[article.category_id]
+  }
+
+  return null
+}
+
 onMounted(async () => {
 
-  await fetchArticles()
+  await Promise.all([
+    fetchArticles(),
+    fetchCategories(),
+  ])
 
   isAdmin.value =
     localStorage.getItem("is_admin") === "true"
@@ -302,9 +335,16 @@ const deleteArticle = async (id) => {
               items-center
             "
           >
-            <div class="text-sm text-[#c4b498]">
-              作者：
-              {{ article.author?.username }}
+            <div class="text-sm text-[#c4b498] flex flex-wrap gap-x-4 gap-y-1">
+              <span>
+                作者：
+                {{ article.author?.username }}
+              </span>
+
+              <span v-if="getCategoryName(article)">
+                分类：
+                {{ getCategoryName(article) }}
+              </span>
             </div>
 
             <div

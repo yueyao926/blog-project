@@ -3,6 +3,7 @@ import { ref, onMounted } from "vue"
 import { useRoute } from "vue-router"
 
 import api from "../services/api"
+import { getCategories } from "../api/category"
 
 import { marked } from "marked"
 
@@ -12,11 +13,15 @@ import "highlight.js/styles/github.css"
 
 const route = useRoute()
 const article = ref(null)
+const categories = ref([])
+const categoryMap = ref({})
 const comments = ref([])
 const commentContent = ref("")
 const likeCount = ref(0)
 
 onMounted(async () => {
+
+  await fetchCategories()
 
   const response = await api.get(
     `/articles/${route.params.id}`
@@ -34,6 +39,36 @@ onMounted(async () => {
     }
   })
 })
+
+const fetchCategories = async () => {
+  try {
+    const response = await getCategories()
+    categories.value = response.data
+
+    categoryMap.value = Object.fromEntries(
+      response.data.map((cat) => [cat.id, cat.name])
+    )
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const getCategoryName = () => {
+  if (!article.value) return null
+
+  if (article.value.category?.name) {
+    return article.value.category.name
+  }
+
+  if (
+    article.value.category_id &&
+    categoryMap.value[article.value.category_id]
+  ) {
+    return categoryMap.value[article.value.category_id]
+  }
+
+  return null
+}
 
 const fetchComments = async () => {
 
@@ -166,6 +201,11 @@ const renderMarkdown = (content) => {
         <span>
           作者：
           {{ article.author?.username }}
+        </span>
+
+        <span v-if="getCategoryName()">
+          分类：
+          {{ getCategoryName() }}
         </span>
 
         <span>

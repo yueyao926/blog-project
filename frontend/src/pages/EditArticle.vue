@@ -1,11 +1,12 @@
 <script setup>
-import { ref, onMounted } from "vue"
+import { ref, onMounted, computed } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 import { MdEditor } from "md-editor-v3"
 import "md-editor-v3/lib/style.css"
 
 import api from "../services/api"
+import { getCategories } from "../api/category"
 
 const route = useRoute()
 const router = useRouter()
@@ -14,6 +15,10 @@ const title = ref("")
 const summary = ref("")
 const cover_image = ref("")
 const content = ref("")
+const category_id = ref("")
+const categories = ref([])
+
+const isCreate = computed(() => route.params.id === "new")
 
 onMounted(() => {
   const token = localStorage.getItem("token")
@@ -26,8 +31,21 @@ onMounted(() => {
     return
   }
 
-  fetchArticle()
+  fetchCategories()
+
+  if (!isCreate.value) {
+    fetchArticle()
+  }
 })
+
+const fetchCategories = async () => {
+  try {
+    const response = await getCategories()
+    categories.value = response.data
+  } catch (error) {
+    console.error(error)
+  }
+}
 
 const fetchArticle = async () => {
   try {
@@ -43,6 +61,8 @@ const fetchArticle = async () => {
     cover_image.value = response.data.cover_image
 
     content.value = response.data.content
+
+    category_id.value = response.data.category_id ?? ""
 
   } catch (error) {
 
@@ -106,18 +126,35 @@ const onUploadImg = async (
   callback(res)
 }
 
+const buildPayload = () => ({
+  title: title.value,
+  summary: summary.value,
+  cover_image: cover_image.value,
+  content: content.value,
+  category_id: category_id.value === "" ? null : Number(category_id.value),
+})
+
+const createArticle = async () => {
+  try {
+    await api.post("/articles", buildPayload())
+
+    alert("文章发布成功")
+
+    router.push("/")
+  } catch (error) {
+    console.error(error)
+
+    alert("发布失败")
+  }
+}
+
 const updateArticle = async () => {
 
   try {
 
     await api.put(
       `/articles/${route.params.id}`,
-      {
-        title: title.value,
-        summary: summary.value,
-        cover_image: cover_image.value,
-        content: content.value,
-      }
+      buildPayload()
     )
 
     alert("修改成功")
@@ -137,7 +174,7 @@ const updateArticle = async () => {
   <div class="page-bg">
     <div class="admin-page relative z-10">
       <div class="glass-card admin-form p-8">
-        <h1>编辑文章</h1>
+        <h1>{{ isCreate ? "发布文章" : "编辑文章" }}</h1>
 
         <div class="space-y-5">
           <div>
@@ -157,6 +194,23 @@ const updateArticle = async () => {
               rows="3"
               class="input-field resize-none"
             />
+          </div>
+
+          <div>
+            <label class="admin-label">分类</label>
+            <select
+              v-model="category_id"
+              class="input-field"
+            >
+              <option value="">未分类</option>
+              <option
+                v-for="cat in categories"
+                :key="cat.id"
+                :value="cat.id"
+              >
+                {{ cat.name }}
+              </option>
+            </select>
           </div>
 
           <div>
@@ -187,10 +241,10 @@ const updateArticle = async () => {
           </div>
 
           <button
-            @click="updateArticle"
+            @click="isCreate ? createArticle() : updateArticle()"
             class="btn-dark px-8 py-3"
           >
-            保存修改
+            {{ isCreate ? "发布文章" : "保存修改" }}
           </button>
         </div>
       </div>
