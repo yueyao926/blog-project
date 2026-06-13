@@ -13,6 +13,7 @@ import "md-editor-v3/lib/style.css"
 
 
 import api from "../services/api"
+import { getCategories } from "../api/category"
 
 
 
@@ -27,6 +28,10 @@ const selectedFile = ref(null)
 const content = ref("")
 
 const summary = ref("")
+
+const category_id = ref("")
+
+const categories = ref([])
 
 
 
@@ -66,7 +71,15 @@ onMounted(async () => {
 
       router.push("/")
 
+      return
+
     }
+
+    const categoriesResponse = await getCategories()
+
+    categories.value = Array.isArray(categoriesResponse.data)
+      ? categoriesResponse.data
+      : []
 
 
 
@@ -206,6 +219,11 @@ const createArticle = async () => {
 
       cover_image: cover_image.value,
 
+      category_id:
+        category_id.value === ""
+          ? null
+          : Number(category_id.value),
+
     })
 
 
@@ -225,6 +243,8 @@ const createArticle = async () => {
     content.value = ""
 
     cover_image.value = ""
+
+    category_id.value = ""
 
   } catch (error) {
 
@@ -289,6 +309,40 @@ const createArticle = async () => {
               class="input-field resize-none"
 
             />
+
+          </div>
+
+
+
+          <div>
+
+            <label class="admin-label">分类</label>
+
+            <select
+
+              v-model="category_id"
+
+              class="input-field"
+
+            >
+
+              <option value="">未分类</option>
+
+              <option
+
+                v-for="category in categories"
+
+                :key="category.id"
+
+                :value="String(category.id)"
+
+              >
+
+                {{ category.name }}
+
+              </option>
+
+            </select>
 
           </div>
 

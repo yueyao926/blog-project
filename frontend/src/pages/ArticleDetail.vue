@@ -63,11 +63,14 @@ const getCategoryName = () => {
   const categoryId =
     article.value.category_id ?? article.value.category?.id
 
-  if (categoryId != null && categoryMap.value[String(categoryId)]) {
+  if (
+    categoryId != null &&
+    categoryMap.value[String(categoryId)]
+  ) {
     return categoryMap.value[String(categoryId)]
   }
 
-  return null
+  return "未分类"
 }
 
 const fetchComments = async () => {
@@ -203,7 +206,7 @@ const renderMarkdown = (content) => {
           {{ article.author?.username }}
         </span>
 
-        <span v-if="getCategoryName()">
+        <span>
           分类：
           {{ getCategoryName() }}
         </span>

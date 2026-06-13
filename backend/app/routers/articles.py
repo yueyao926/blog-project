@@ -45,7 +45,8 @@ def create_article(
         content=article.content,
         cover_image=article.cover_image,
         author_id=current_user.id ,
-        summary=article.summary
+        summary=article.summary,
+        category_id=article.category_id,
     )
 
     db.add(new_article)
@@ -158,6 +159,8 @@ def update_article(
     article.cover_image = updated_article.cover_image
 
     article.content = updated_article.content
+
+    article.category_id = updated_article.category_id
 
     db.commit()
 

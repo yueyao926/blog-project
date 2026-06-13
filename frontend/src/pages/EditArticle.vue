@@ -20,7 +20,7 @@ const categories = ref([])
 
 const isCreate = computed(() => route.params.id === "new")
 
-onMounted(async () => {
+onMounted(() => {
   const token = localStorage.getItem("token")
 
   if (!token) {
@@ -31,17 +31,17 @@ onMounted(async () => {
     return
   }
 
-  await fetchCategories()
+  fetchCategories()
 
   if (!isCreate.value) {
-    await fetchArticle()
+    fetchArticle()
   }
 })
 
 const fetchCategories = async () => {
   try {
     const response = await getCategories()
-    categories.value = Array.isArray(response.data) ? response.data : []
+    categories.value = response.data
   } catch (error) {
     console.error(error)
   }
@@ -62,12 +62,11 @@ const fetchArticle = async () => {
 
     content.value = response.data.content
 
+    const currentCategoryId =
+      response.data.category_id ?? response.data.category?.id
+
     category_id.value =
-      response.data.category_id != null
-        ? String(response.data.category_id)
-        : response.data.category?.id != null
-          ? String(response.data.category.id)
-          : ""
+      currentCategoryId == null ? "" : String(currentCategoryId)
 
   } catch (error) {
 
