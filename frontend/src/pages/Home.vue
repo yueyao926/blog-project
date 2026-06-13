@@ -8,7 +8,7 @@ import {
 } from "../api/category"
 
 const removeMarkdown = (text) => {
-  return text
+  return (text || "")
     .replace(/[#_*`>-]/g, "")
     .replace(/\n/g, " ")
 }
@@ -16,21 +16,16 @@ const removeMarkdown = (text) => {
 const router = useRouter()
 
 const articles = ref([])
-
 const categories = ref([])
-
 const categoryMap = ref({})
 
 const isAdmin = ref(false)
-
 const keyword = ref("")
 
 const selectedCategoryId = ref("")
-
 const isCategoryDrawerOpen = ref(false)
 
 const newCategoryName = ref("")
-
 const isCreatingCategory = ref(false)
 
 const filteredArticles = computed(() => {
@@ -43,6 +38,7 @@ const filteredArticles = computed(() => {
   return articles.value.filter((article) => {
     const articleCategoryId =
       article.category_id ?? article.category?.id
+
     const matchesCategory =
       selectedCategoryId.value === "" ||
       String(articleCategoryId ?? "") === selectedCategoryId.value
@@ -76,9 +72,7 @@ const particles = Array.from({ length: 12 }, (_, i) => ({
 }))
 
 const fetchArticles = async () => {
-
   const response = await api.get("/articles")
-
   articles.value = response.data
 }
 
@@ -134,7 +128,6 @@ const addCategory = async () => {
 }
 
 onMounted(async () => {
-
   await Promise.all([
     fetchArticles(),
     fetchCategories(),
@@ -405,7 +398,6 @@ const deleteArticle = async (id) => {
               <span><span class="stat-icon">+</span>分类</span>
               <span class="stat-value">{{ categories.length }}</span>
             </div>
-
           </div>
 
           <p class="sidebar-footer">
@@ -432,7 +424,7 @@ const deleteArticle = async (id) => {
 
           <input
             v-model="keyword"
-            placeholder="搜索文章标题..."
+            placeholder="搜索文章标题、摘要或内容..."
             class="input-field shadow-sm"
           />
         </div>
