@@ -1,6 +1,9 @@
 from pydantic import BaseModel
 from datetime import datetime
 
+from app.schemas.category import CategoryOut
+
+
 class AuthorOut(BaseModel):
     id: int
     username: str
@@ -14,6 +17,7 @@ class ArticleCreate(BaseModel):
     content: str
     summary: str
     cover_image: str | None = None
+    category_id: int | None = None
 
 
 class ArticleResponse(BaseModel):
@@ -25,6 +29,8 @@ class ArticleResponse(BaseModel):
     author_id: int
     summary: str
     author: AuthorOut
+    category_id: int | None = None
+    category: CategoryOut | None = None
 
     class Config:
         from_attributes = True
@@ -34,3 +40,4 @@ class ArticleUpdate(BaseModel):
     content: str
     cover_image: str | None = None
     summary: str
+    category_id: int | None = None
