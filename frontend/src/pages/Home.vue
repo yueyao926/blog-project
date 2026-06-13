@@ -371,8 +371,9 @@ const deleteArticle = async (id) => {
             "
           >
             <a
-              href="https://github.com"
+              href="https://github.com/yueyao926"
               target="_blank"
+              rel="noopener noreferrer"
               class="btn-dark"
             >
               GitHub
