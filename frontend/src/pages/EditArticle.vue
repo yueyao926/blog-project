@@ -20,7 +20,7 @@ const categories = ref([])
 
 const isCreate = computed(() => route.params.id === "new")
 
-onMounted(() => {
+onMounted(async () => {
   const token = localStorage.getItem("token")
 
   if (!token) {
@@ -31,17 +31,17 @@ onMounted(() => {
     return
   }
 
-  fetchCategories()
+  await fetchCategories()
 
   if (!isCreate.value) {
-    fetchArticle()
+    await fetchArticle()
   }
 })
 
 const fetchCategories = async () => {
   try {
     const response = await getCategories()
-    categories.value = response.data
+    categories.value = Array.isArray(response.data) ? response.data : []
   } catch (error) {
     console.error(error)
   }
@@ -62,7 +62,12 @@ const fetchArticle = async () => {
 
     content.value = response.data.content
 
-    category_id.value = response.data.category_id ?? ""
+    category_id.value =
+      response.data.category_id != null
+        ? String(response.data.category_id)
+        : response.data.category?.id != null
+          ? String(response.data.category.id)
+          : ""
 
   } catch (error) {
 
@@ -206,7 +211,7 @@ const updateArticle = async () => {
               <option
                 v-for="cat in categories"
                 :key="cat.id"
-                :value="cat.id"
+                :value="String(cat.id)"
               >
                 {{ cat.name }}
               </option>

@@ -48,10 +48,10 @@ const fetchArticles = async () => {
 const fetchCategories = async () => {
   try {
     const response = await getCategories()
-    categories.value = response.data
+    categories.value = Array.isArray(response.data) ? response.data : []
 
     categoryMap.value = Object.fromEntries(
-      response.data.map((cat) => [cat.id, cat.name])
+      categories.value.map((cat) => [String(cat.id), cat.name])
     )
   } catch (error) {
     console.error(error)
@@ -63,8 +63,10 @@ const getCategoryName = (article) => {
     return article.category.name
   }
 
-  if (article.category_id && categoryMap.value[article.category_id]) {
-    return categoryMap.value[article.category_id]
+  const categoryId = article.category_id ?? article.category?.id
+
+  if (categoryId != null && categoryMap.value[String(categoryId)]) {
+    return categoryMap.value[String(categoryId)]
   }
 
   return null
@@ -169,7 +171,10 @@ const deleteArticle = async (id) => {
       "
     >
       <!-- 左侧个人信息 -->
-      <Sidebar :article-count="articles.length" />
+      <Sidebar
+        :article-count="articles.length"
+        :category-count="categories.length"
+      />
 
       <!-- 右侧文章 -->
       <div class="col-span-9 space-y-8">

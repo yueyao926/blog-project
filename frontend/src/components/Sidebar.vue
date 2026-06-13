@@ -4,6 +4,10 @@ defineProps({
     type: Number,
     default: 0,
   },
+  categoryCount: {
+    type: Number,
+    default: 0,
+  },
 })
 </script>
 
@@ -91,12 +95,7 @@ defineProps({
 
         <div class="stat-item">
           <span><span class="stat-icon">+</span>分类</span>
-          <span class="stat-value">1</span>
-        </div>
-
-        <div class="stat-item">
-          <span><span class="stat-icon">✿</span>标签</span>
-          <span class="stat-value">3</span>
+          <span class="stat-value">{{ categoryCount }}</span>
         </div>
       </div>
 
