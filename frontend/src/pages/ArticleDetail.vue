@@ -43,10 +43,10 @@ onMounted(async () => {
 const fetchCategories = async () => {
   try {
     const response = await getCategories()
-    categories.value = response.data
+    categories.value = Array.isArray(response.data) ? response.data : []
 
     categoryMap.value = Object.fromEntries(
-      response.data.map((cat) => [cat.id, cat.name])
+      categories.value.map((cat) => [String(cat.id), cat.name])
     )
   } catch (error) {
     console.error(error)
@@ -60,14 +60,17 @@ const getCategoryName = () => {
     return article.value.category.name
   }
 
+  const categoryId =
+    article.value.category_id ?? article.value.category?.id
+
   if (
-    article.value.category_id &&
-    categoryMap.value[article.value.category_id]
+    categoryId != null &&
+    categoryMap.value[String(categoryId)]
   ) {
-    return categoryMap.value[article.value.category_id]
+    return categoryMap.value[String(categoryId)]
   }
 
-  return null
+  return "未分类"
 }
 
 const fetchComments = async () => {
@@ -203,7 +206,7 @@ const renderMarkdown = (content) => {
           {{ article.author?.username }}
         </span>
 
-        <span v-if="getCategoryName()">
+        <span>
           分类：
           {{ getCategoryName() }}
         </span>

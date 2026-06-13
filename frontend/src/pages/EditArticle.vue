@@ -62,7 +62,11 @@ const fetchArticle = async () => {
 
     content.value = response.data.content
 
-    category_id.value = response.data.category_id ?? ""
+    const currentCategoryId =
+      response.data.category_id ?? response.data.category?.id
+
+    category_id.value =
+      currentCategoryId == null ? "" : String(currentCategoryId)
 
   } catch (error) {
 
@@ -206,7 +210,7 @@ const updateArticle = async () => {
               <option
                 v-for="cat in categories"
                 :key="cat.id"
-                :value="cat.id"
+                :value="String(cat.id)"
               >
                 {{ cat.name }}
               </option>

@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from "vue"
 import { useRouter } from "vue-router"
+import PandaPet from "./components/PandaPet.vue";
 
 const router = useRouter()
 
@@ -114,5 +115,7 @@ const logout = () => {
     <div class="pt-16">
       <router-view />
     </div>
+
+    <PandaPet />
   </div>
 </template>
