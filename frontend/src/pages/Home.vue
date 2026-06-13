@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from "vue"
+import { computed, ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import api from "../services/api"
 import { getCategories } from "../api/category"
@@ -23,6 +23,30 @@ const isAdmin = ref(false)
 
 const keyword = ref("")
 
+const filteredArticles = computed(() => {
+  const keywords = keyword.value
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  if (keywords.length === 0) {
+    return articles.value
+  }
+
+  return articles.value.filter((article) => {
+    const searchableText = [
+      article.title || "",
+      article.summary || "",
+      article.content || "",
+    ]
+      .join(" ")
+      .toLowerCase()
+
+    return keywords.some((item) => searchableText.includes(item))
+  })
+})
+
 const particles = Array.from({ length: 12 }, (_, i) => ({
   id: i,
   left: `${Math.random() * 100}%`,
@@ -33,14 +57,7 @@ const particles = Array.from({ length: 12 }, (_, i) => ({
 
 const fetchArticles = async () => {
 
-  const response = await api.get(
-    "/articles",
-    {
-      params: {
-        keyword: keyword.value
-      }
-    }
-  )
+  const response = await api.get("/articles")
 
   articles.value = response.data
 }
@@ -81,10 +98,6 @@ onMounted(async () => {
 
   isAdmin.value =
     localStorage.getItem("is_admin") === "true"
-})
-
-watch(keyword, () => {
-  fetchArticles()
 })
 
 const deleteArticle = async (id) => {
@@ -194,13 +207,13 @@ const deleteArticle = async (id) => {
 
           <input
             v-model="keyword"
-            placeholder="搜索文章标题..."
+            placeholder="搜索文章标题、摘要或内容..."
             class="input-field shadow-sm"
           />
         </div>
 
         <div
-          v-for="(article, index) in articles"
+          v-for="(article, index) in filteredArticles"
           :key="article.id"
           class="glass-card article-card p-8"
           :style="{ animationDelay: `${index * 0.08}s` }"
