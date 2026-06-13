@@ -6,11 +6,16 @@ import Register from "../pages/Register.vue"
 import Admin from "../pages/Admin.vue"
 import ArticleDetail from "../pages/ArticleDetail.vue"
 import EditArticle from "../pages/EditArticle.vue"
+import About from "../pages/About.vue"
 
 const routes = [
   {
     path: "/",
     component: Home
+  },
+  {
+    path: "/about",
+    component: About
   },
   {
     path: "/login",

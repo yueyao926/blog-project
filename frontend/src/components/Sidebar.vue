@@ -73,12 +73,12 @@ defineProps({
           GitHub
         </a>
 
-        <a
-          href="#"
+        <router-link
+          to="/about"
           class="btn-primary"
         >
           关于我
-        </a>
+        </router-link>
       </div>
 
       <div class="section-divider"></div>
