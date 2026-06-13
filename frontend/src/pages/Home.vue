@@ -1,8 +1,11 @@
 <script setup>
-import { ref, onMounted, watch } from "vue"
+import { computed, ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import api from "../services/api"
-import { getCategories } from "../api/category"
+import {
+  createCategory,
+  getCategories,
+} from "../api/category"
 
 const removeMarkdown = (text) => {
   return text
@@ -22,6 +25,48 @@ const isAdmin = ref(false)
 
 const keyword = ref("")
 
+const selectedCategoryId = ref("")
+
+const isCategoryDrawerOpen = ref(false)
+
+const newCategoryName = ref("")
+
+const isCreatingCategory = ref(false)
+
+const filteredArticles = computed(() => {
+  const keywords = keyword.value
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  return articles.value.filter((article) => {
+    const articleCategoryId =
+      article.category_id ?? article.category?.id
+    const matchesCategory =
+      selectedCategoryId.value === "" ||
+      String(articleCategoryId ?? "") === selectedCategoryId.value
+
+    if (!matchesCategory) {
+      return false
+    }
+
+    if (keywords.length === 0) {
+      return true
+    }
+
+    const searchableText = [
+      article.title || "",
+      article.summary || "",
+      article.content || "",
+    ]
+      .join(" ")
+      .toLowerCase()
+
+    return keywords.some((item) => searchableText.includes(item))
+  })
+})
+
 const particles = Array.from({ length: 12 }, (_, i) => ({
   id: i,
   left: `${Math.random() * 100}%`,
@@ -32,14 +77,7 @@ const particles = Array.from({ length: 12 }, (_, i) => ({
 
 const fetchArticles = async () => {
 
-  const response = await api.get(
-    "/articles",
-    {
-      params: {
-        keyword: keyword.value
-      }
-    }
-  )
+  const response = await api.get("/articles")
 
   articles.value = response.data
 }
@@ -47,10 +85,10 @@ const fetchArticles = async () => {
 const fetchCategories = async () => {
   try {
     const response = await getCategories()
-    categories.value = response.data
+    categories.value = Array.isArray(response.data) ? response.data : []
 
     categoryMap.value = Object.fromEntries(
-      response.data.map((cat) => [cat.id, cat.name])
+      categories.value.map((cat) => [String(cat.id), cat.name])
     )
   } catch (error) {
     console.error(error)
@@ -62,11 +100,37 @@ const getCategoryName = (article) => {
     return article.category.name
   }
 
-  if (article.category_id && categoryMap.value[article.category_id]) {
-    return categoryMap.value[article.category_id]
+  const categoryId = article.category_id ?? article.category?.id
+
+  if (categoryId != null && categoryMap.value[String(categoryId)]) {
+    return categoryMap.value[String(categoryId)]
   }
 
-  return null
+  return "未分类"
+}
+
+const selectCategory = (categoryId) => {
+  selectedCategoryId.value = categoryId
+  isCategoryDrawerOpen.value = false
+}
+
+const addCategory = async () => {
+  const name = newCategoryName.value.trim()
+
+  if (!name || isCreatingCategory.value) return
+
+  isCreatingCategory.value = true
+
+  try {
+    await createCategory(name)
+    newCategoryName.value = ""
+    await fetchCategories()
+  } catch (error) {
+    console.error(error)
+    alert("分类创建失败")
+  } finally {
+    isCreatingCategory.value = false
+  }
 }
 
 onMounted(async () => {
@@ -78,10 +142,6 @@ onMounted(async () => {
 
   isAdmin.value =
     localStorage.getItem("is_admin") === "true"
-})
-
-watch(keyword, () => {
-  fetchArticles()
 })
 
 const deleteArticle = async (id) => {
@@ -152,6 +212,99 @@ const deleteArticle = async (id) => {
         </svg>
       </div>
     </div>
+
+    <button
+      v-if="!isCategoryDrawerOpen"
+      type="button"
+      @click="isCategoryDrawerOpen = true"
+      class="btn-primary fixed left-0 top-1/2 z-40 rounded-l-none"
+    >
+      分类
+    </button>
+
+    <button
+      v-if="isCategoryDrawerOpen"
+      type="button"
+      aria-label="关闭分类栏"
+      class="fixed inset-0 z-40 bg-black/20"
+      @click="isCategoryDrawerOpen = false"
+    ></button>
+
+    <aside
+      class="
+        fixed
+        left-0
+        top-0
+        z-50
+        h-screen
+        w-72
+        overflow-y-auto
+        glass-card
+        rounded-none
+        p-6
+        transition-transform
+        duration-300
+      "
+      :class="isCategoryDrawerOpen ? 'translate-x-0' : '-translate-x-full'"
+    >
+      <div class="flex items-center justify-between">
+        <h2 class="font-display text-2xl font-bold text-[#6b5d4d]">
+          分类
+        </h2>
+
+        <button
+          type="button"
+          @click="isCategoryDrawerOpen = false"
+          class="btn-primary"
+        >
+          关闭
+        </button>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="space-y-2">
+        <button
+          type="button"
+          @click="selectCategory('')"
+          class="btn-primary w-full"
+        >
+          全部分类
+        </button>
+
+        <button
+          v-for="category in categories"
+          :key="category.id"
+          type="button"
+          @click="selectCategory(String(category.id))"
+          class="btn-primary w-full"
+        >
+          {{ category.name }}
+        </button>
+      </div>
+
+      <div v-if="isAdmin" class="mt-8">
+        <div class="section-divider"></div>
+
+        <label class="admin-label">新建分类</label>
+
+        <input
+          v-model="newCategoryName"
+          placeholder="分类名称"
+          class="input-field"
+          @keyup.enter="addCategory"
+        />
+
+        <button
+          type="button"
+          class="btn-dark w-full mt-3"
+          :disabled="isCreatingCategory"
+          @click="addCategory"
+        >
+          {{ isCreatingCategory ? "创建中..." : "新建分类" }}
+        </button>
+      </div>
+    </aside>
 
     <!-- 内容区域 -->
     <div
@@ -250,13 +403,9 @@ const deleteArticle = async (id) => {
 
             <div class="stat-item">
               <span><span class="stat-icon">+</span>分类</span>
-              <span class="stat-value">1</span>
+              <span class="stat-value">{{ categories.length }}</span>
             </div>
 
-            <div class="stat-item">
-              <span><span class="stat-icon">✿</span>标签</span>
-              <span class="stat-value">3</span>
-            </div>
           </div>
 
           <p class="sidebar-footer">
@@ -289,7 +438,7 @@ const deleteArticle = async (id) => {
         </div>
 
         <div
-          v-for="(article, index) in articles"
+          v-for="(article, index) in filteredArticles"
           :key="article.id"
           class="glass-card article-card p-8"
           :style="{ animationDelay: `${index * 0.08}s` }"
@@ -341,7 +490,7 @@ const deleteArticle = async (id) => {
                 {{ article.author?.username }}
               </span>
 
-              <span v-if="getCategoryName(article)">
+              <span>
                 分类：
                 {{ getCategoryName(article) }}
               </span>
