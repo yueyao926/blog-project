@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from "vue"
+import { computed, ref, onMounted, onUnmounted, nextTick } from "vue"
 import { useRouter } from "vue-router"
 import PandaPet from "./components/PandaPet.vue";
 
@@ -36,6 +36,15 @@ const logout = () => {
   router.push("/login")
 
   location.reload()
+}
+
+const openCategories = async () => {
+  if (router.currentRoute.value.path !== "/") {
+    await router.push("/")
+    await nextTick()
+  }
+
+  window.dispatchEvent(new Event("open-category-drawer"))
 }
 </script>
 
@@ -76,6 +85,14 @@ const logout = () => {
           >
             首页
           </router-link>
+
+          <button
+            type="button"
+            class="nav-link"
+            @click="openCategories"
+          >
+            分类
+          </button>
 
           <router-link
             v-if="isAdmin"

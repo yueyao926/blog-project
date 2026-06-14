@@ -1,9 +1,10 @@
 <script setup>
-import { computed, ref, onMounted } from "vue"
+import { computed, ref, onMounted, onUnmounted } from "vue"
 import { useRouter } from "vue-router"
 import api from "../services/api"
 import {
   createCategory,
+  deleteCategory,
   getCategories,
 } from "../api/category"
 
@@ -26,7 +27,43 @@ const selectedCategoryId = ref("")
 const isCategoryDrawerOpen = ref(false)
 
 const newCategoryName = ref("")
+const newCategoryParentId = ref("")
 const isCreatingCategory = ref(false)
+
+const buildCategoryTree = (items) => {
+  const nodes = new Map(
+    items.map((item) => [
+      item.id,
+      { ...item, children: [] },
+    ])
+  )
+  const roots = []
+
+  nodes.forEach((node) => {
+    const parent = nodes.get(node.parent_id)
+
+    if (parent) {
+      parent.children.push(node)
+    } else {
+      roots.push(node)
+    }
+  })
+
+  return roots
+}
+
+const flattenCategoryTree = (nodes, depth = 0) => {
+  return nodes.flatMap((node) => [
+    { ...node, depth },
+    ...flattenCategoryTree(node.children, depth + 1),
+  ])
+}
+
+const categoryTree = computed(() => buildCategoryTree(categories.value))
+
+const categoryRows = computed(() =>
+  flattenCategoryTree(categoryTree.value)
+)
 
 const filteredArticles = computed(() => {
   const keywords = keyword.value
@@ -116,8 +153,14 @@ const addCategory = async () => {
   isCreatingCategory.value = true
 
   try {
-    await createCategory(name)
+    const parentId =
+      newCategoryParentId.value === ""
+        ? null
+        : Number(newCategoryParentId.value)
+
+    await createCategory(name, parentId)
     newCategoryName.value = ""
+    newCategoryParentId.value = ""
     await fetchCategories()
   } catch (error) {
     console.error(error)
@@ -127,7 +170,36 @@ const addCategory = async () => {
   }
 }
 
+const removeCategory = async (category) => {
+  const confirmed = confirm(`确定删除分类“${category.name}”吗？`)
+
+  if (!confirmed) return
+
+  try {
+    await deleteCategory(category.id)
+
+    if (selectedCategoryId.value === String(category.id)) {
+      selectedCategoryId.value = ""
+    }
+
+    await fetchCategories()
+  } catch (error) {
+    console.error(error)
+
+    const message =
+      error.response?.data?.detail || "分类删除失败"
+
+    alert(message)
+  }
+}
+
+const openCategoryDrawer = () => {
+  isCategoryDrawerOpen.value = true
+}
+
 onMounted(async () => {
+  window.addEventListener("open-category-drawer", openCategoryDrawer)
+
   await Promise.all([
     fetchArticles(),
     fetchCategories(),
@@ -135,6 +207,10 @@ onMounted(async () => {
 
   isAdmin.value =
     localStorage.getItem("is_admin") === "true"
+})
+
+onUnmounted(() => {
+  window.removeEventListener("open-category-drawer", openCategoryDrawer)
 })
 
 const deleteArticle = async (id) => {
@@ -207,15 +283,6 @@ const deleteArticle = async (id) => {
     </div>
 
     <button
-      v-if="!isCategoryDrawerOpen"
-      type="button"
-      @click="isCategoryDrawerOpen = true"
-      class="btn-primary fixed left-0 top-1/2 z-40 rounded-l-none"
-    >
-      分类
-    </button>
-
-    <button
       v-if="isCategoryDrawerOpen"
       type="button"
       aria-label="关闭分类栏"
@@ -265,15 +332,29 @@ const deleteArticle = async (id) => {
           全部分类
         </button>
 
-        <button
-          v-for="category in categories"
+        <div
+          v-for="category in categoryRows"
           :key="category.id"
-          type="button"
-          @click="selectCategory(String(category.id))"
-          class="btn-primary w-full"
+          class="flex items-center gap-2"
+          :style="{ paddingLeft: `${category.depth * 16}px` }"
         >
-          {{ category.name }}
-        </button>
+          <button
+            type="button"
+            @click="selectCategory(String(category.id))"
+            class="btn-primary flex-1"
+          >
+            {{ category.name }}
+          </button>
+
+          <button
+            v-if="isAdmin"
+            type="button"
+            class="btn-danger"
+            @click="removeCategory(category)"
+          >
+            删除
+          </button>
+        </div>
       </div>
 
       <div v-if="isAdmin" class="mt-8">
@@ -287,6 +368,20 @@ const deleteArticle = async (id) => {
           class="input-field"
           @keyup.enter="addCategory"
         />
+
+        <select
+          v-model="newCategoryParentId"
+          class="input-field mt-3"
+        >
+          <option value="">无父分类（一级分类）</option>
+          <option
+            v-for="category in categoryRows"
+            :key="category.id"
+            :value="String(category.id)"
+          >
+            {{ "　".repeat(category.depth) }}{{ category.name }}
+          </option>
+        </select>
 
         <button
           type="button"
