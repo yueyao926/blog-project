@@ -373,11 +373,13 @@ const deleteArticle = async (id) => {
         top-0
         z-50
         h-screen
-        w-72
+        w-80
+        max-w-[85vw]
         overflow-y-auto
         glass-card
         rounded-none
-        p-6
+        p-4
+        md:p-6
         transition-transform
         duration-300
       "
@@ -411,7 +413,7 @@ const deleteArticle = async (id) => {
         <div
           v-for="category in visibleCategoryRows"
           :key="category.id"
-          class="flex items-center gap-2"
+          class="flex min-w-0 items-center gap-2"
           :style="{ paddingLeft: `${category.depth * 16}px` }"
         >
           <button
@@ -431,7 +433,7 @@ const deleteArticle = async (id) => {
           <button
             type="button"
             @click="selectCategory(String(category.id))"
-            class="btn-primary flex-1"
+            class="btn-primary min-w-0 flex-1 break-words"
           >
             {{ category.name }}
           </button>
@@ -439,7 +441,7 @@ const deleteArticle = async (id) => {
           <button
             v-if="isAdmin"
             type="button"
-            class="btn-danger"
+            class="btn-danger shrink-0"
             @click="removeCategory(category)"
           >
             删除
@@ -490,21 +492,25 @@ const deleteArticle = async (id) => {
         z-10
         max-w-7xl
         mx-auto
-        px-6
+        px-4
+        md:px-6
         py-10
         grid
-        grid-cols-12
-        gap-8
+        grid-cols-1
+        lg:grid-cols-12
+        gap-6
+        lg:gap-8
       "
     >
-      <div class="col-span-3">
+      <div class="col-span-1 lg:col-span-3">
         <div
           class="
             glass-card
             sidebar-card
-            p-6
-            sticky
-            top-24
+            p-5
+            md:p-6
+            lg:sticky
+            lg:top-24
             animate-fade-up
           "
         >
@@ -590,8 +596,8 @@ const deleteArticle = async (id) => {
         </div>
       </div>
 
-      <div class="col-span-9 space-y-8">
-        <div class="search-box">
+      <div class="col-span-1 lg:col-span-9 min-w-0 space-y-8">
+        <div class="search-box w-full max-w-full">
           <svg
             class="search-icon"
             width="18"
@@ -615,7 +621,7 @@ const deleteArticle = async (id) => {
         <div
           v-for="(article, index) in filteredArticles"
           :key="article.id"
-          class="glass-card article-card p-8"
+          class="glass-card article-card p-5 md:p-8 max-w-full overflow-hidden"
           :style="{ animationDelay: `${index * 0.08}s` }"
         >
           <div
@@ -624,7 +630,7 @@ const deleteArticle = async (id) => {
           >
             <img
               :src="article.cover_image"
-              class="cover-img w-full h-64 object-cover"
+              class="cover-img w-full h-44 md:h-64 object-cover"
             />
           </div>
 
@@ -633,7 +639,8 @@ const deleteArticle = async (id) => {
             class="
               article-title
               font-display
-              text-3xl
+              text-2xl
+              md:text-3xl
               font-bold
               text-[#6b5d4d]
             "
@@ -655,8 +662,12 @@ const deleteArticle = async (id) => {
             class="
               mt-6
               flex
+              flex-col
+              sm:flex-row
               justify-between
-              items-center
+              items-start
+              sm:items-center
+              gap-4
             "
           >
             <div class="text-sm text-[#c4b498] flex flex-wrap gap-x-4 gap-y-1">
@@ -673,7 +684,7 @@ const deleteArticle = async (id) => {
 
             <div
               v-if="isAdmin"
-              class="flex gap-3"
+              class="flex flex-wrap gap-3"
             >
               <button
                 @click="

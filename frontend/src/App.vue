@@ -58,15 +58,19 @@ const openCategories = async () => {
         class="
           max-w-7xl
           mx-auto
-          px-6
-          h-16
+          px-3
+          md:px-6
+          py-2
+          min-h-16
           flex
+          flex-wrap
           items-center
           justify-between
+          gap-2
         "
       >
         <div
-          class="nav-logo"
+          class="nav-logo text-sm sm:text-base md:text-lg"
           @click="router.push('/')"
         >
           Yueyao <span>Blog</span>
@@ -75,8 +79,13 @@ const openCategories = async () => {
         <div
           class="
             flex
+            flex-wrap
             items-center
-            gap-6
+            justify-end
+            gap-2
+            md:gap-6
+            text-sm
+            md:text-base
           "
         >
           <router-link
@@ -129,7 +138,7 @@ const openCategories = async () => {
       </div>
     </nav>
 
-    <div class="pt-16">
+    <div class="pt-24 sm:pt-16">
       <router-view />
     </div>
 

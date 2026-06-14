@@ -283,9 +283,9 @@ const createArticle = async () => {
 
   <div class="page-bg">
 
-    <div class="admin-page relative z-10">
+    <div class="admin-page relative z-10 max-w-full px-4 md:px-0">
 
-      <div class="glass-card admin-form p-8">
+      <div class="glass-card admin-form w-full max-w-full overflow-hidden p-4 md:p-8">
 
         <h1>后台管理</h1>
 
@@ -301,7 +301,7 @@ const createArticle = async () => {
 
               placeholder="文章标题"
 
-              class="input-field"
+              class="input-field w-full"
 
             />
 
@@ -321,7 +321,7 @@ const createArticle = async () => {
 
               rows="3"
 
-              class="input-field resize-none"
+              class="input-field w-full resize-none"
 
             />
 
@@ -337,7 +337,7 @@ const createArticle = async () => {
 
               v-model="category_id"
 
-              class="input-field"
+              class="input-field w-full"
 
             >
 
@@ -373,7 +373,7 @@ const createArticle = async () => {
 
               placeholder="封面图片URL"
 
-              class="input-field"
+              class="input-field w-full"
 
             />
 
@@ -381,7 +381,7 @@ const createArticle = async () => {
 
 
 
-          <div>
+          <div class="max-w-full overflow-x-auto">
 
             <label class="admin-label">上传封面</label>
 
@@ -391,7 +391,7 @@ const createArticle = async () => {
 
               @change="uploadImage"
 
-              class="file-input"
+              class="file-input w-full max-w-full"
 
             />
 
@@ -399,7 +399,7 @@ const createArticle = async () => {
 
 
 
-          <div>
+          <div class="max-w-full overflow-x-auto">
 
             <label class="admin-label">正文内容</label>
 
@@ -432,7 +432,7 @@ const createArticle = async () => {
         </div>
 
         <div class="glass-card mt-8 p-6">
-          <div class="flex items-center justify-between gap-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h2 class="text-xl font-bold text-[#6b5d4d]">
               用户管理（共 {{ users.length }} 人）
             </h2>

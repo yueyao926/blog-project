@@ -201,4 +201,21 @@ onUnmounted(() => {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
 }
+
+@media (max-width: 768px) {
+  .npc {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .npc-img {
+    width: 90px;
+  }
+
+  .bubble {
+    bottom: 72px;
+    max-width: 70vw;
+    white-space: normal;
+  }
+}
 </style>
