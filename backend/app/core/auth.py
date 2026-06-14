@@ -1,10 +1,15 @@
+import os
+
 from datetime import datetime, timedelta, UTC
 
 from jose import jwt
 from jose.exceptions import JWTError
 
 # JWT 配置
-SECRET_KEY = "your-super-secret-key"
+SECRET_KEY = os.getenv(
+    "SECRET_KEY",
+    "dev-secret-key-change-later"
+)
 
 ALGORITHM = "HS256"
 

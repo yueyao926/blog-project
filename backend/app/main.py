@@ -1,3 +1,5 @@
+import os
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 
@@ -22,8 +24,13 @@ app.mount(
     name="uploads"
 )
 
+FRONTEND_ORIGIN = os.getenv(
+    "FRONTEND_ORIGIN",
+    "http://localhost:5173"
+)
+
 origins = [
-    "http://localhost:5173",
+    FRONTEND_ORIGIN,
     "http://127.0.0.1:5173"
 ]
 
