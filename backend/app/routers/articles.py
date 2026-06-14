@@ -12,6 +12,9 @@ from app.dependencies import get_db
 from app.models.article import Article
 from app.models.user import User
 
+from app.models.article_like import ArticleLike
+from app.models.comment import Comment
+
 from app.schemas.article import (
     ArticleCreate,
     ArticleUpdate,
@@ -102,30 +105,26 @@ def get_article(
 @router.delete("/{article_id}")
 def delete_article(
     article_id: int,
-
     db: Session = Depends(get_db),
-
-    current_user: User = Depends(
-        get_current_admin
-    )
+    current_user: User = Depends(get_current_admin),
 ):
-    article = db.query(Article).filter(
-        Article.id == article_id
-    ).first()
+    article = db.query(Article).filter(Article.id == article_id).first()
 
     if not article:
-        raise HTTPException(
-            status_code=404,
-            detail="Article not found"
-        )
+        raise HTTPException(status_code=404, detail="文章不存在")
+
+    db.query(ArticleLike).filter(
+        ArticleLike.article_id == article_id
+    ).delete(synchronize_session=False)
+
+    db.query(Comment).filter(
+        Comment.article_id == article_id
+    ).delete(synchronize_session=False)
 
     db.delete(article)
-
     db.commit()
 
-    return {
-        "message": "Article deleted successfully"
-    }
+    return {"message": "删除成功"}
 
 @router.put(
     "/{article_id}",
