@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_db
 from app.dependencies import get_current_admin
 
+from app.models.article import Article
 from app.models.category import Category
 from app.models.user import User
 
@@ -134,15 +135,19 @@ def delete_category(
             detail="Category not found"
         )
 
-    has_children = db.query(Category).filter(
+    db.query(Category).filter(
         Category.parent_id == category_id
-    ).first()
+    ).update(
+        {Category.parent_id: category.parent_id},
+        synchronize_session=False,
+    )
 
-    if has_children:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot delete category with children"
-        )
+    db.query(Article).filter(
+        Article.category_id == category_id
+    ).update(
+        {Article.category_id: None},
+        synchronize_session=False,
+    )
 
     db.delete(category)
 
