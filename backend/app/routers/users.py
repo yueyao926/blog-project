@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
@@ -35,6 +36,26 @@ def get_db():
 
 @router.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
+    existing_username = db.query(User).filter(
+        User.username == user.username
+    ).first()
+
+    if existing_username:
+        raise HTTPException(
+            status_code=400,
+            detail="用户名已存在"
+        )
+
+    existing_email = db.query(User).filter(
+        User.email == user.email
+    ).first()
+
+    if existing_email:
+        raise HTTPException(
+            status_code=400,
+            detail="邮箱已被注册"
+        )
+
     new_user = User(
         username=user.username,
         email=user.email,
@@ -42,7 +63,33 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     )
 
     db.add(new_user)
-    db.commit()
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+
+        if db.query(User).filter(
+            User.username == user.username
+        ).first():
+            raise HTTPException(
+                status_code=400,
+                detail="用户名已存在"
+            )
+
+        if db.query(User).filter(
+            User.email == user.email
+        ).first():
+            raise HTTPException(
+                status_code=400,
+                detail="邮箱已被注册"
+            )
+
+        raise HTTPException(
+            status_code=400,
+            detail="注册信息已存在"
+        )
+
     db.refresh(new_user)
 
     return {
@@ -97,6 +144,17 @@ def get_me(
     current_user: User = Depends(get_current_user)
 ):
     return current_user
+
+
+@router.get(
+    "/admin/users",
+    response_model=list[UserOut]
+)
+def get_admin_users(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    return db.query(User).order_by(User.id.asc()).all()
 
 @router.get("/admin-test")
 def admin_test(
