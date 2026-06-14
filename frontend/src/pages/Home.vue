@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onMounted } from "vue"
+import { computed, ref, onMounted, onUnmounted } from "vue"
 import { useRouter } from "vue-router"
 import api from "../services/api"
 import {
@@ -29,6 +29,7 @@ const isCategoryDrawerOpen = ref(false)
 const newCategoryName = ref("")
 const newCategoryParentId = ref("")
 const isCreatingCategory = ref(false)
+
 const expandedCategoryIds = ref(new Set())
 const hasInitializedExpansion = ref(false)
 
@@ -39,6 +40,7 @@ const buildCategoryTree = (items) => {
       { ...item, children: [] },
     ])
   )
+
   const roots = []
 
   nodes.forEach((node) => {
@@ -57,6 +59,7 @@ const buildCategoryTree = (items) => {
 const flattenCategoryTree = (nodes, depth = 0, visibleOnly = false) => {
   return nodes.flatMap((node) => {
     const row = { ...node, depth }
+
     const showChildren =
       !visibleOnly || expandedCategoryIds.value.has(node.id)
 
@@ -85,9 +88,7 @@ const getDescendantCategoryIds = (categoryId) => {
 
   const collect = (parentId) => {
     categories.value.forEach((category) => {
-      if (
-        String(category.parent_id ?? "") === String(parentId)
-      ) {
+      if (String(category.parent_id ?? "") === String(parentId)) {
         result.push(String(category.id))
         collect(category.id)
       }
@@ -114,12 +115,13 @@ const filteredArticles = computed(() => {
         ])
 
   return articles.value.filter((article) => {
-    const articleCategoryId =
-      article.category_id ?? article.category?.id
+    const articleCategoryId = String(
+      article.category_id ?? article.category?.id ?? ""
+    )
 
     const matchesCategory =
       allowedCategoryIds === null ||
-      allowedCategoryIds.has(String(articleCategoryId ?? ""))
+      allowedCategoryIds.has(articleCategoryId)
 
     if (!matchesCategory) {
       return false
@@ -167,6 +169,7 @@ const fetchCategories = async () => {
       expandedCategoryIds.value = new Set(
         categoryTree.value.map((category) => category.id)
       )
+
       hasInitializedExpansion.value = true
     }
   } catch (error) {
@@ -223,8 +226,10 @@ const addCategory = async () => {
         : Number(newCategoryParentId.value)
 
     await createCategory(name, parentId)
+
     newCategoryName.value = ""
     newCategoryParentId.value = ""
+
     await fetchCategories()
   } catch (error) {
     console.error(error)
@@ -265,7 +270,13 @@ const removeCategory = async (category) => {
   }
 }
 
+const openCategoryDrawer = () => {
+  isCategoryDrawerOpen.value = true
+}
+
 onMounted(async () => {
+  window.addEventListener("open-category-drawer", openCategoryDrawer)
+
   await Promise.all([
     fetchArticles(),
     fetchCategories(),
@@ -273,6 +284,10 @@ onMounted(async () => {
 
   isAdmin.value =
     localStorage.getItem("is_admin") === "true"
+})
+
+onUnmounted(() => {
+  window.removeEventListener("open-category-drawer", openCategoryDrawer)
 })
 
 const deleteArticle = async (id) => {
@@ -300,7 +315,6 @@ const deleteArticle = async (id) => {
 
 <template>
   <div class="page-bg">
-    <!-- 顶部大图 -->
     <div class="hero-banner">
       <div
         class="hero-bg"
@@ -343,15 +357,6 @@ const deleteArticle = async (id) => {
         </svg>
       </div>
     </div>
-
-    <button
-      v-if="!isCategoryDrawerOpen"
-      type="button"
-      @click="isCategoryDrawerOpen = true"
-      class="btn-primary fixed left-0 top-1/2 z-40 rounded-l-none"
-    >
-      分类
-    </button>
 
     <button
       v-if="isCategoryDrawerOpen"
@@ -479,7 +484,6 @@ const deleteArticle = async (id) => {
       </div>
     </aside>
 
-    <!-- 内容区域 -->
     <div
       class="
         relative
@@ -493,7 +497,6 @@ const deleteArticle = async (id) => {
         gap-8
       "
     >
-      <!-- 左侧个人信息 -->
       <div class="col-span-3">
         <div
           class="
@@ -559,12 +562,12 @@ const deleteArticle = async (id) => {
               GitHub
             </a>
 
-            <a
-              href="#"
+            <router-link
+              to="/about"
               class="btn-primary"
             >
               关于我
-            </a>
+            </router-link>
           </div>
 
           <div class="section-divider"></div>
@@ -587,7 +590,6 @@ const deleteArticle = async (id) => {
         </div>
       </div>
 
-      <!-- 右侧文章 -->
       <div class="col-span-9 space-y-8">
         <div class="search-box">
           <svg

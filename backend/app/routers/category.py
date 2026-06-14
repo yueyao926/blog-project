@@ -11,6 +11,7 @@ from app.dependencies import get_current_admin
 
 from app.models.article import Article
 from app.models.category import Category
+from app.models.article import Article
 from app.models.user import User
 
 from app.schemas.category import (
@@ -148,6 +149,16 @@ def delete_category(
         {Article.category_id: None},
         synchronize_session=False,
     )
+
+    has_articles = db.query(Article).filter(
+        Article.category_id == category_id
+    ).first()
+
+    if has_articles:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete category with articles"
+        )
 
     db.delete(category)
 
