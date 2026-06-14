@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:16
+    container_name: blog_db
+    restart: always
+    environment:
+      POSTGRES_DB: blog_db
+      POSTGRES_USER: blog_user
+      POSTGRES_PASSWORD: blog_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blog_user -d blog_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - blog_net
+
+  backend:
+    build:
+      context: ./backend
+    container_name: blog_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://blog_user:blog_password@db:5432/blog_db
+      SECRET_KEY: dev-secret-key-change-later
+      FRONTEND_ORIGIN: http://localhost:5173
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - blog_net
+
+volumes:
+  postgres_data:
+  uploads_data:
+
+networks:
+  blog_net:
