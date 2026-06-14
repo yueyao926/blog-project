@@ -10,10 +10,25 @@ const email = ref("")
 const password = ref("")
 
 const register = async () => {
+  if (!username.value.trim()) {
+    alert("用户名不能为空")
+    return
+  }
+
+  if (!email.value.trim()) {
+    alert("邮箱不能为空")
+    return
+  }
+
+  if (!password.value) {
+    alert("密码不能为空")
+    return
+  }
+
   try {
     await api.post("/register", {
-      username: username.value,
-      email: email.value,
+      username: username.value.trim(),
+      email: email.value.trim(),
       password: password.value,
     })
 
@@ -23,7 +38,12 @@ const register = async () => {
   } catch (error) {
     console.error(error)
 
-    alert("注册失败")
+    const detail = error.response?.data?.detail
+    const message = Array.isArray(detail)
+      ? detail[0]?.msg
+      : detail
+
+    alert(message || "注册失败")
   }
 }
 </script>
@@ -46,6 +66,7 @@ const register = async () => {
         <label>邮箱</label>
         <input
           v-model="email"
+          type="email"
           placeholder="请输入邮箱"
           class="input-field"
         />

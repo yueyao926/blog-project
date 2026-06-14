@@ -33,6 +33,12 @@ const category_id = ref("")
 
 const categories = ref([])
 
+const users = ref([])
+
+const usersError = ref("")
+
+const showUsers = ref(false)
+
 
 
 onMounted(async () => {
@@ -80,6 +86,17 @@ onMounted(async () => {
     categories.value = Array.isArray(categoriesResponse.data)
       ? categoriesResponse.data
       : []
+
+    try {
+      const usersResponse = await api.get("/admin/users")
+      users.value = Array.isArray(usersResponse.data)
+        ? usersResponse.data
+        : []
+    } catch (error) {
+      console.error(error)
+      usersError.value =
+        error.response?.data?.detail || "获取用户列表失败"
+    }
 
 
 
@@ -272,8 +289,6 @@ const createArticle = async () => {
 
         <h1>后台管理</h1>
 
-
-
         <div class="space-y-5">
 
           <div>
@@ -414,6 +429,57 @@ const createArticle = async () => {
 
           </button>
 
+        </div>
+
+        <div class="glass-card mt-8 p-6">
+          <div class="flex items-center justify-between gap-4">
+            <h2 class="text-xl font-bold text-[#6b5d4d]">
+              用户管理（共 {{ users.length }} 人）
+            </h2>
+
+            <button
+              type="button"
+              class="btn-primary"
+              @click="showUsers = !showUsers"
+            >
+              {{ showUsers ? "收起用户列表" : "展开用户列表" }}
+            </button>
+          </div>
+
+          <div v-if="showUsers">
+            <p
+              v-if="usersError"
+              class="mt-3 text-red-500"
+            >
+              {{ usersError }}
+            </p>
+
+            <div v-else class="mt-4 overflow-x-auto">
+              <table class="w-full text-left">
+                <thead>
+                  <tr>
+                    <th class="p-2">ID</th>
+                    <th class="p-2">用户名</th>
+                    <th class="p-2">邮箱</th>
+                    <th class="p-2">是否管理员</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="user in users"
+                    :key="user.id"
+                  >
+                    <td class="p-2">{{ user.id }}</td>
+                    <td class="p-2">{{ user.username }}</td>
+                    <td class="p-2">{{ user.email }}</td>
+                    <td class="p-2">
+                      {{ user.is_admin ? "是" : "否" }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
       </div>
