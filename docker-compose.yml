@@ -4,11 +4,11 @@ services:
     container_name: blog_db
     restart: always
     environment:
-      POSTGRES_DB: blog_db
-      POSTGRES_USER: blog_user
-      POSTGRES_PASSWORD: blog_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U blog_user -d blog_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -26,9 +26,9 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://blog_user:blog_password@db:5432/blog_db
-      SECRET_KEY: dev-secret-key-change-later
-      FRONTEND_ORIGIN: http://localhost:5173
+      DATABASE_URL: ${DATABASE_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
     ports:
       - "8000:8000"
     volumes:
