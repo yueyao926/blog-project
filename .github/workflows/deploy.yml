@@ -1,0 +1,109 @@
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Check backend syntax
+        run: python -m compileall -q backend/app
+
+      - name: Validate Docker Compose configuration
+        env:
+          POSTGRES_DB: ci_blog
+          POSTGRES_USER: ci_blog
+          POSTGRES_PASSWORD: ci-only-password
+          DATABASE_URL: postgresql://ci_blog:ci-only-password@db:5432/ci_blog
+          SECRET_KEY: ci-only-secret
+          FRONTEND_ORIGIN: http://localhost
+        run: docker compose config --quiet
+
+  deploy:
+    name: Deploy to Azure VM
+    needs: verify
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          SERVER_KNOWN_HOSTS: ${{ secrets.SERVER_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Update production containers
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -p "$SERVER_PORT" \
+            "$SERVER_USER@$SERVER_HOST" \
+            'bash -s' <<'DEPLOY'
+          set -Eeuo pipefail
+
+          cd /www/blog-project
+
+          test -f .env
+          test "$(git branch --show-current)" = "main"
+          test -z "$(git status --porcelain)"
+
+          git fetch origin main
+          git pull --ff-only origin main
+
+          docker compose up -d --build --remove-orphans
+          docker compose ps
+
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl --fail --silent --show-error \
+              http://127.0.0.1/api/articles > /dev/null; then
+              echo "Production health check passed."
+              exit 0
+            fi
+            sleep 5
+          done
+
+          docker compose logs --tail=100 backend frontend
+          echo "Production health check failed."
+          exit 1
+          DEPLOY

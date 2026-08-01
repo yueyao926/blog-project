@@ -149,14 +149,34 @@ When migrating to another server, keep:
 7. Point domain DNS to the server IP.
 8. Configure HTTPS later.
 
-## Future CI/CD Plan
+## Automatic Production Deployment
 
-A later CI/CD setup can use GitHub Actions to:
+The workflow at `.github/workflows/deploy.yml` verifies and deploys every push
+to `main`. It can also be started manually from the GitHub Actions page.
 
-- Trigger on push to `main`.
-- SSH into the server.
-- Run `git pull`.
-- Run `docker compose up -d --build`.
-- Run `docker image prune -f`.
+The production server must meet these requirements:
 
-This guide does not include CI/CD configuration files.
+- The repository is checked out at `/www/blog-project` on branch `main`.
+- The working tree is clean.
+- The production `.env` exists only on the server.
+- The deployment user can run Docker without `sudo`.
+- `git pull --ff-only origin main` works without interactive authentication.
+
+Create a GitHub environment named `production` and configure these environment
+secrets:
+
+- `SERVER_HOST`: production server IP or hostname.
+- `SERVER_PORT`: SSH port, normally `22`.
+- `SERVER_USER`: SSH deployment user.
+- `SERVER_SSH_KEY`: private key dedicated to GitHub Actions deployment.
+- `SERVER_KNOWN_HOSTS`: verified SSH host key entry for the production server.
+
+The matching deployment public key must be present in the server user's
+`~/.ssh/authorized_keys` file. Do not reuse or commit the production `.env`, SSH
+private key, database password, or application secret key.
+
+Deployment runs are serialized so two production updates cannot run at the same
+time. Before deployment, the workflow builds the frontend, checks Python syntax,
+and validates the Docker Compose configuration. After updating the containers,
+it verifies the public API endpoint and reports recent container logs if the
+health check fails.
