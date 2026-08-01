@@ -22,10 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -50,6 +50,12 @@ jobs:
           FRONTEND_ORIGIN: http://localhost
         run: docker compose config --quiet
 
+      - name: Build production Docker images
+        if: github.event_name == 'pull_request'
+        run: |
+          docker build --tag blog-project-backend:latest ./backend
+          docker build --tag blog-project-frontend:latest ./frontend
+
   deploy:
     name: Deploy to Azure VM
     needs: verify
@@ -59,6 +65,14 @@ jobs:
     timeout-minutes: 20
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Build production images on the runner
+        run: |
+          docker build --tag blog-project-backend:latest ./backend
+          docker build --tag blog-project-frontend:latest ./frontend
+
       - name: Configure SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
@@ -70,6 +84,23 @@ jobs:
           printf '%s\n' "$SERVER_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
+      - name: Transfer production images
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          docker save \
+            blog-project-backend:latest \
+            blog-project-frontend:latest \
+            | gzip -1 \
+            | ssh -i ~/.ssh/deploy_key \
+                -o ServerAliveInterval=15 \
+                -o ServerAliveCountMax=4 \
+                -p "$SERVER_PORT" \
+                "$SERVER_USER@$SERVER_HOST" \
+                'gzip -d | docker load'
+
       - name: Update production containers
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
@@ -77,6 +108,8 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
           ssh -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=4 \
             -p "$SERVER_PORT" \
             "$SERVER_USER@$SERVER_HOST" \
             'bash -s' <<'DEPLOY'
@@ -91,7 +124,7 @@ jobs:
           git fetch origin main
           git pull --ff-only origin main
 
-          docker compose up -d --build --remove-orphans
+          docker compose up -d --no-build --remove-orphans
           docker compose ps
 
           for attempt in 1 2 3 4 5 6 7 8 9 10; do

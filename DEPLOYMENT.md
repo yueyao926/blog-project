@@ -177,6 +177,9 @@ private key, database password, or application secret key.
 
 Deployment runs are serialized so two production updates cannot run at the same
 time. Before deployment, the workflow builds the frontend, checks Python syntax,
-and validates the Docker Compose configuration. After updating the containers,
-it verifies the public API endpoint and reports recent container logs if the
-health check fails.
+and validates the Docker Compose configuration. Production Docker images are
+built on the GitHub-hosted runner and transferred to the server, so a small
+production VM does not need enough memory or CPU to compile the frontend. The
+server only loads the images, updates the checkout, and starts the containers
+with `--no-build`. Finally, the workflow verifies the public API endpoint and
+reports recent container logs if the health check fails.
