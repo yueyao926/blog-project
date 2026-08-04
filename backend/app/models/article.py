@@ -39,6 +39,8 @@ class Article(Base):
         server_default=func.now()
     )
 
+    view_count = Column(Integer, nullable=False, default=0, server_default="0")
+
     author_id = Column(
         Integer,
         ForeignKey("users.id")

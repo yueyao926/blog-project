@@ -16,6 +16,10 @@ const removeMarkdown = (text) => {
 
 const router = useRouter()
 
+const formatDate = (value) => value
+  ? new Date(value).toLocaleDateString("zh-CN", { year: "numeric", month: "short", day: "numeric" })
+  : ""
+
 const articles = ref([])
 const categories = ref([])
 const categoryMap = ref({})
@@ -671,6 +675,8 @@ const deleteArticle = async (id) => {
             "
           >
             <div class="text-sm text-[#c4b498] flex flex-wrap gap-x-4 gap-y-1">
+              <span>{{ formatDate(article.created_at) }}</span>
+              <span>{{ article.view_count || 0 }} 次阅读</span>
               <span>
                 作者：
                 {{ article.author?.username }}

@@ -26,6 +26,7 @@ class ArticleResponse(BaseModel):
     content: str
     cover_image: str | None = None
     created_at: datetime
+    view_count: int = 0
     author_id: int
     summary: str
     author: AuthorOut

@@ -100,6 +100,10 @@ def get_article(
             detail="Article not found"
         )
 
+    article.view_count = (article.view_count or 0) + 1
+    db.commit()
+    db.refresh(article)
+
     return article
 
 @router.delete("/{article_id}")

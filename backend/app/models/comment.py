@@ -8,7 +8,7 @@ from sqlalchemy import (
 
 from sqlalchemy.sql import func
 
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import backref, relationship
 
 from app.database import Base
 
@@ -42,6 +42,13 @@ class Comment(Base):
         ForeignKey("users.id")
     )
 
+    parent_id = Column(
+        Integer,
+        ForeignKey("comments.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+
     article = relationship(
         "Article",
         back_populates="comments"
@@ -50,4 +57,17 @@ class Comment(Base):
     user = relationship(
         "User",
         back_populates="comments"
+    )
+
+    replies = relationship(
+        "Comment",
+        cascade="all, delete-orphan",
+        backref=backref("parent", remote_side=[id]),
+        single_parent=True,
+    )
+
+    likes = relationship(
+        "CommentLike",
+        cascade="all, delete-orphan",
+        back_populates="comment",
     )
