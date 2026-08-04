@@ -1,9 +1,11 @@
 <script setup>
 import { ref } from "vue"
-import { useRouter } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import api from "../services/api"
 
 const router = useRouter()
+const route = useRoute()
+const sessionExpired = route.query.expired === "1"
 
 const email = ref("")
 const password = ref("")
@@ -52,6 +54,10 @@ const login = async () => {
   <div class="page-bg auth-page">
     <div class="auth-card glass-card">
       <h1>登录</h1>
+
+      <p v-if="sessionExpired" class="auth-session-notice">
+        登录状态已过期，请重新登录。
+      </p>
 
       <div class="form-group">
         <label>邮箱</label>
