@@ -9,6 +9,7 @@ from app.routers import articles
 from app.routers import comments
 from app.routers import likes
 from app.routers import category
+from app.routers import obsidian
 from app.models.article import Article
 from app.models.comment import Comment
 from app.models.article_like import ArticleLike
@@ -49,6 +50,7 @@ app.include_router(articles.router)
 app.include_router(comments.router)
 app.include_router(likes.router)
 app.include_router(category.router)
+app.include_router(obsidian.router)
 @app.get("/")
 def root():
     return {"message": "博客后端启动成功"}

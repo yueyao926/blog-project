@@ -245,6 +245,12 @@ http://localhost:5173
 
 ---
 
+## Obsidian 直接发布
+
+项目内置 Obsidian 插件，可将当前笔记及本地图片直接创建或更新到博客。完整安装与操作说明见 [docs/OBSIDIAN_PUBLISHING.md](docs/OBSIDIAN_PUBLISHING.md)。
+
+---
+
 ## Author
 
 GitHub:

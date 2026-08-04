@@ -1,0 +1,9 @@
+{
+  "id": "direct-blog-publisher",
+  "name": "Direct Blog Publisher",
+  "version": "1.0.0",
+  "minAppVersion": "1.4.0",
+  "description": "Publish the current Obsidian note and its local images directly to your blog.",
+  "author": "Blog Project",
+  "isDesktopOnly": false
+}
