@@ -2,16 +2,17 @@
 import { computed, ref, onMounted, onUnmounted, nextTick } from "vue"
 import { useRouter } from "vue-router"
 import PandaPet from "./components/PandaPet.vue";
+import api from "./services/api"
 
 const router = useRouter()
 
-const isLoggedIn = computed(() => {
-  return !!localStorage.getItem("token")
-})
+const isLoggedIn = ref(!!localStorage.getItem("token"))
+const isAdmin = ref(localStorage.getItem("is_admin") === "true")
 
-const isAdmin = computed(() => {
-  return localStorage.getItem("is_admin") === "true"
-})
+const syncAuthState = () => {
+  isLoggedIn.value = !!localStorage.getItem("token")
+  isAdmin.value = localStorage.getItem("is_admin") === "true"
+}
 
 const navScrolled = ref(false)
 
@@ -19,12 +20,24 @@ const onScroll = () => {
   navScrolled.value = window.scrollY > 20
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener("scroll", onScroll, { passive: true })
+  window.addEventListener("auth-changed", syncAuthState)
+
+  if (isLoggedIn.value) {
+    try {
+      const response = await api.get("/me")
+      localStorage.setItem("is_admin", String(response.data.is_admin))
+      syncAuthState()
+    } catch (error) {
+      console.error("登录状态校验失败", error)
+    }
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener("scroll", onScroll)
+  window.removeEventListener("auth-changed", syncAuthState)
 })
 
 const logout = () => {
@@ -102,6 +115,13 @@ const openCategories = async () => {
           >
             分类
           </button>
+
+          <router-link
+            to="/projects"
+            class="nav-link"
+          >
+            开源项目
+          </router-link>
 
           <router-link
             v-if="isAdmin"
