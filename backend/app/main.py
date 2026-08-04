@@ -14,6 +14,8 @@ from app.models.article import Article
 from app.models.comment import Comment
 from app.models.article_like import ArticleLike
 from app.models.category import Category
+from app.models.comment_like import CommentLike
+from sqlalchemy import inspect, text
 
 app = FastAPI()
 
@@ -44,6 +46,16 @@ app.add_middleware(
 )
 
 Base.metadata.create_all(bind=engine)
+
+# Idempotent compatibility migration for existing databases.
+with engine.begin() as connection:
+    inspector = inspect(connection)
+    article_columns = {column["name"] for column in inspector.get_columns("articles")}
+    comment_columns = {column["name"] for column in inspector.get_columns("comments")}
+    if "view_count" not in article_columns:
+        connection.execute(text("ALTER TABLE articles ADD COLUMN view_count INTEGER NOT NULL DEFAULT 0"))
+    if "parent_id" not in comment_columns:
+        connection.execute(text("ALTER TABLE comments ADD COLUMN parent_id INTEGER REFERENCES comments(id) ON DELETE CASCADE"))
 
 app.include_router(users.router)
 app.include_router(articles.router)
