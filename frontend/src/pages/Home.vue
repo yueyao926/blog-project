@@ -7,6 +7,7 @@ import {
   createCategory,
   deleteCategory,
   getCategories,
+  updateCategory,
 } from "../api/category"
 
 const removeMarkdown = (text) => {
@@ -27,6 +28,10 @@ const categoryMap = ref({})
 
 const isAdmin = ref(false)
 const keyword = ref("")
+const DEFAULT_HERO_IMAGE = "https://images.unsplash.com/photo-1501854140801-50d01698950b"
+const heroImage = ref(DEFAULT_HERO_IMAGE)
+const heroFileInput = ref(null)
+const isUpdatingHeroImage = ref(false)
 
 const selectedCategoryId = ref("")
 const isCategoryDrawerOpen = ref(false)
@@ -35,8 +40,12 @@ const newCategoryName = ref("")
 const newCategoryParentId = ref("")
 const isCreatingCategory = ref(false)
 
-const expandedCategoryIds = ref(new Set())
-const hasInitializedExpansion = ref(false)
+const activeCategoryParentId = ref(null)
+const categoryNavigationStack = ref([])
+const editingCategoryId = ref(null)
+const editingCategoryName = ref("")
+const editingCategoryParentId = ref("")
+const isSavingCategory = ref(false)
 
 const buildCategoryTree = (items) => {
   const nodes = new Map(
@@ -61,18 +70,12 @@ const buildCategoryTree = (items) => {
   return roots
 }
 
-const flattenCategoryTree = (nodes, depth = 0, visibleOnly = false) => {
+const flattenCategoryTree = (nodes, depth = 0) => {
   return nodes.flatMap((node) => {
     const row = { ...node, depth }
-
-    const showChildren =
-      !visibleOnly || expandedCategoryIds.value.has(node.id)
-
     return [
       row,
-      ...(showChildren
-        ? flattenCategoryTree(node.children, depth + 1, visibleOnly)
-        : []),
+      ...flattenCategoryTree(node.children, depth + 1),
     ]
   })
 }
@@ -83,9 +86,37 @@ const categoryRows = computed(() =>
   flattenCategoryTree(categoryTree.value)
 )
 
-const visibleCategoryRows = computed(() =>
-  flattenCategoryTree(categoryTree.value, 0, true)
+const visibleCategories = computed(() => {
+  const parentId = activeCategoryParentId.value
+
+  return categories.value
+    .filter((category) => String(category.parent_id ?? "") === String(parentId ?? ""))
+    .map((category) => ({
+      ...category,
+      children: categories.value.filter(
+        (child) => String(child.parent_id ?? "") === String(category.id)
+      ),
+    }))
+})
+
+const activeParentCategory = computed(() =>
+  categories.value.find(
+    (category) => String(category.id) === String(activeCategoryParentId.value)
+  ) || null
 )
+
+const editableParentRows = computed(() => {
+  if (editingCategoryId.value == null) return categoryRows.value
+
+  const excludedIds = new Set([
+    String(editingCategoryId.value),
+    ...getDescendantCategoryIds(editingCategoryId.value),
+  ])
+
+  return categoryRows.value.filter(
+    (category) => !excludedIds.has(String(category.id))
+  )
+})
 
 const getDescendantCategoryIds = (categoryId) => {
   const result = []
@@ -170,13 +201,6 @@ const fetchCategories = async () => {
       categories.value.map((cat) => [String(cat.id), cat.name])
     )
 
-    if (!hasInitializedExpansion.value) {
-      expandedCategoryIds.value = new Set(
-        categoryTree.value.map((category) => category.id)
-      )
-
-      hasInitializedExpansion.value = true
-    }
   } catch (error) {
     console.error(error)
   }
@@ -201,20 +225,69 @@ const selectCategory = (categoryId) => {
   isCategoryDrawerOpen.value = false
 }
 
-const isExpanded = (categoryId) => {
-  return expandedCategoryIds.value.has(categoryId)
-}
-
-const toggleCategory = (categoryId) => {
-  const nextIds = new Set(expandedCategoryIds.value)
-
-  if (nextIds.has(categoryId)) {
-    nextIds.delete(categoryId)
-  } else {
-    nextIds.add(categoryId)
+const openCategoryLevel = (category) => {
+  if (!category.children.length) {
+    selectCategory(String(category.id))
+    return
   }
 
-  expandedCategoryIds.value = nextIds
+  categoryNavigationStack.value.push(category.id)
+  activeCategoryParentId.value = category.id
+  cancelEditCategory()
+}
+
+const fetchSiteSettings = async () => {
+  try {
+    const response = await api.get("/site-settings")
+    heroImage.value = response.data.hero_image || DEFAULT_HERO_IMAGE
+  } catch (error) {
+    console.error("首页图加载失败", error)
+  }
+}
+
+const chooseHeroImage = () => {
+  if (!isUpdatingHeroImage.value) {
+    heroFileInput.value?.click()
+  }
+}
+
+const uploadHeroImage = async (event) => {
+  const input = event.target
+  const file = input.files?.[0]
+  if (!file || isUpdatingHeroImage.value) return
+
+  if (!file.type.startsWith("image/")) {
+    alert("请选择图片文件")
+    input.value = ""
+    return
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    alert("图片大小不能超过 10 MB")
+    input.value = ""
+    return
+  }
+
+  isUpdatingHeroImage.value = true
+
+  try {
+    const formData = new FormData()
+    formData.append("file", file)
+    const response = await api.put("/site-settings/hero-image", formData)
+    heroImage.value = response.data.hero_image || DEFAULT_HERO_IMAGE
+  } catch (error) {
+    console.error(error)
+    alert(error.response?.data?.detail || "首页图更换失败")
+  } finally {
+    isUpdatingHeroImage.value = false
+    input.value = ""
+  }
+}
+
+const goBackCategoryLevel = () => {
+  categoryNavigationStack.value.pop()
+  activeCategoryParentId.value = categoryNavigationStack.value.at(-1) ?? null
+  cancelEditCategory()
 }
 
 const addCategory = async () => {
@@ -244,6 +317,42 @@ const addCategory = async () => {
   }
 }
 
+const startEditCategory = (category) => {
+  editingCategoryId.value = category.id
+  editingCategoryName.value = category.name
+  editingCategoryParentId.value = category.parent_id == null
+    ? ""
+    : String(category.parent_id)
+}
+
+const cancelEditCategory = () => {
+  editingCategoryId.value = null
+  editingCategoryName.value = ""
+  editingCategoryParentId.value = ""
+}
+
+const saveCategory = async () => {
+  const name = editingCategoryName.value.trim()
+  if (!name || editingCategoryId.value == null || isSavingCategory.value) return
+
+  isSavingCategory.value = true
+
+  try {
+    const parentId = editingCategoryParentId.value === ""
+      ? null
+      : Number(editingCategoryParentId.value)
+
+    await updateCategory(editingCategoryId.value, name, parentId)
+    await fetchCategories()
+    cancelEditCategory()
+  } catch (error) {
+    console.error(error)
+    alert(error.response?.data?.detail || "分类保存失败")
+  } finally {
+    isSavingCategory.value = false
+  }
+}
+
 const removeCategory = async (category) => {
   const confirmed = confirm(
     "删除该分类后，子分类会上移一级，直接属于该分类的文章会变为未分类。确定删除吗？"
@@ -258,9 +367,9 @@ const removeCategory = async (category) => {
       selectedCategoryId.value = ""
     }
 
-    const nextIds = new Set(expandedCategoryIds.value)
-    nextIds.delete(category.id)
-    expandedCategoryIds.value = nextIds
+    if (editingCategoryId.value === category.id) {
+      cancelEditCategory()
+    }
 
     await Promise.all([
       fetchCategories(),
@@ -276,6 +385,9 @@ const removeCategory = async (category) => {
 }
 
 const openCategoryDrawer = () => {
+  activeCategoryParentId.value = null
+  categoryNavigationStack.value = []
+  cancelEditCategory()
   isCategoryDrawerOpen.value = true
 }
 
@@ -285,6 +397,7 @@ onMounted(async () => {
   await Promise.all([
     fetchArticles(),
     fetchCategories(),
+    fetchSiteSettings(),
   ])
 
   isAdmin.value =
@@ -323,10 +436,7 @@ const deleteArticle = async (id) => {
     <div class="hero-banner">
       <div
         class="hero-bg"
-        style="
-          background-image:
-          url('https://images.unsplash.com/photo-1501854140801-50d01698950b');
-        "
+        :style="{ backgroundImage: `url('${heroImage}')` }"
       ></div>
 
       <div class="hero-overlay"></div>
@@ -361,6 +471,30 @@ const deleteArticle = async (id) => {
           <path d="M12 5v14M5 12l7 7 7-7"/>
         </svg>
       </div>
+
+      <input
+        ref="heroFileInput"
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        class="sr-only"
+        @change="uploadHeroImage"
+      />
+
+      <button
+        v-if="isAdmin"
+        type="button"
+        class="hero-image-edit"
+        :disabled="isUpdatingHeroImage"
+        :aria-label="isUpdatingHeroImage ? '正在更换首页图' : '更换首页图'"
+        title="更换首页图"
+        @click="chooseHeroImage"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5Z"/>
+          <path d="m13 7.5 3.5 3.5"/>
+        </svg>
+        <span>{{ isUpdatingHeroImage ? "上传中" : "更换背景" }}</span>
+      </button>
     </div>
 
     <button
@@ -372,92 +506,114 @@ const deleteArticle = async (id) => {
     ></button>
 
     <aside
-      class="
-        fixed
-        left-0
-        top-0
-        z-50
-        h-screen
-        w-80
-        max-w-[85vw]
-        overflow-y-auto
-        glass-card
-        rounded-none
-        p-4
-        md:p-6
-        transition-transform
-        duration-300
-      "
+      class="category-drawer fixed left-0 top-0 z-50 h-screen w-80 max-w-[85vw] overflow-y-auto transition-transform duration-300"
       :class="isCategoryDrawerOpen ? 'translate-x-0' : '-translate-x-full'"
     >
-      <div class="flex items-center justify-between">
-        <h2 class="font-display text-2xl font-bold text-[#6b5d4d]">
-          分类
-        </h2>
+      <div class="category-drawer-header">
+        <button
+          v-if="activeParentCategory"
+          type="button"
+          class="category-icon-button"
+          aria-label="返回上一级分类"
+          @click="goBackCategoryLevel"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+
+        <div class="category-heading">
+          <span>{{ activeParentCategory ? "子分类" : "文章分类" }}</span>
+          <h2>{{ activeParentCategory?.name || "全部分类" }}</h2>
+        </div>
 
         <button
           type="button"
+          class="category-icon-button"
+          aria-label="关闭分类栏"
           @click="isCategoryDrawerOpen = false"
-          class="btn-primary"
         >
-          关闭
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
         </button>
       </div>
 
-      <div class="section-divider"></div>
-
-      <div class="space-y-2">
+      <div class="category-list">
         <button
           type="button"
-          @click="selectCategory('')"
-          class="btn-primary w-full"
+          class="category-list-row category-all-row"
+          @click="selectCategory(activeParentCategory ? String(activeParentCategory.id) : '')"
         >
-          全部分类
+          <span>{{ activeParentCategory ? `查看「${activeParentCategory.name}」的全部文章` : "查看全部文章" }}</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
         </button>
 
         <div
-          v-for="category in visibleCategoryRows"
+          v-for="category in visibleCategories"
           :key="category.id"
-          class="flex min-w-0 items-center gap-2"
-          :style="{ paddingLeft: `${category.depth * 16}px` }"
+          class="category-list-row"
         >
           <button
-            v-if="category.children.length"
             type="button"
-            class="shrink-0"
-            @click="toggleCategory(category.id)"
+            class="category-row-main"
+            @click="openCategoryLevel(category)"
           >
-            {{ isExpanded(category.id) ? "▼" : "▶" }}
+            <span>{{ category.name }}</span>
+            <small v-if="category.children.length">{{ category.children.length }} 个子分类</small>
+            <svg v-if="category.children.length" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
           </button>
 
-          <span
-            v-else
-            class="inline-block w-4 shrink-0"
-          ></span>
-
-          <button
-            type="button"
-            @click="selectCategory(String(category.id))"
-            class="btn-primary min-w-0 flex-1 break-words"
-          >
-            {{ category.name }}
-          </button>
-
-          <button
-            v-if="isAdmin"
-            type="button"
-            class="btn-danger shrink-0"
-            @click="removeCategory(category)"
-          >
-            删除
-          </button>
+          <div v-if="isAdmin" class="category-row-actions">
+            <button type="button" class="category-edit" @click="startEditCategory(category)">编辑</button>
+            <button type="button" class="category-delete" @click="removeCategory(category)">删除</button>
+          </div>
         </div>
+
+        <p v-if="!visibleCategories.length" class="category-empty">这里还没有子分类</p>
       </div>
 
-      <div v-if="isAdmin" class="mt-8">
-        <div class="section-divider"></div>
+      <div v-if="isAdmin && editingCategoryId != null" class="category-admin-panel">
+        <div class="category-form-heading">
+          <div>
+            <span>编辑分类</span>
+            <strong>{{ editingCategoryName }}</strong>
+          </div>
+          <button type="button" @click="cancelEditCategory">取消</button>
+        </div>
 
-        <label class="admin-label">新建分类</label>
+        <input
+          v-model="editingCategoryName"
+          placeholder="分类名称"
+          class="input-field"
+          @keyup.enter="saveCategory"
+        />
+
+        <select v-model="editingCategoryParentId" class="input-field mt-3">
+          <option value="">无父分类（一级分类）</option>
+          <option
+            v-for="category in editableParentRows"
+            :key="category.id"
+            :value="String(category.id)"
+          >
+            {{ "　".repeat(category.depth) }}{{ category.name }}
+          </option>
+        </select>
+
+        <button
+          type="button"
+          class="category-save-button"
+          :disabled="isSavingCategory"
+          @click="saveCategory"
+        >
+          {{ isSavingCategory ? "保存中..." : "保存修改" }}
+        </button>
+      </div>
+
+      <div v-if="isAdmin && editingCategoryId == null" class="category-admin-panel">
+
+        <div class="category-form-heading">
+          <div>
+            <span>管理分类</span>
+            <strong>新建分类</strong>
+          </div>
+        </div>
 
         <input
           v-model="newCategoryName"
@@ -482,7 +638,7 @@ const deleteArticle = async (id) => {
 
         <button
           type="button"
-          class="btn-dark w-full mt-3"
+          class="category-save-button"
           :disabled="isCreatingCategory"
           @click="addCategory"
         >

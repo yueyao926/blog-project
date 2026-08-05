@@ -11,12 +11,14 @@ from app.routers import likes
 from app.routers import category
 from app.routers import obsidian
 from app.routers import projects
+from app.routers import site_settings
 from app.models.article import Article
 from app.models.comment import Comment
 from app.models.article_like import ArticleLike
 from app.models.category import Category
 from app.models.comment_like import CommentLike
 from app.models.project import Project
+from app.models.site_setting import SiteSetting
 from sqlalchemy import inspect, text
 
 app = FastAPI()
@@ -66,6 +68,7 @@ app.include_router(likes.router)
 app.include_router(category.router)
 app.include_router(obsidian.router)
 app.include_router(projects.router)
+app.include_router(site_settings.router)
 @app.get("/")
 def root():
     return {"message": "博客后端启动成功"}
