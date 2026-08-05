@@ -123,6 +123,10 @@ const openCategories = async () => {
             开源项目
           </router-link>
 
+          <router-link to="/about" class="nav-link">
+            关于 Yueyao
+          </router-link>
+
           <router-link
             v-if="isAdmin"
             to="/admin"

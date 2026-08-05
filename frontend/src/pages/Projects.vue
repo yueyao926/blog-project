@@ -11,6 +11,7 @@ const showForm = ref(false)
 const saving = ref(false)
 const formError = ref("")
 const form = ref({ name: "", description: "", github_url: "", tags: "" })
+const editingProjectId = ref(null)
 
 const isAdmin = computed(() => localStorage.getItem("is_admin") === "true")
 const filteredProjects = computed(() => {
@@ -44,14 +45,36 @@ const loadProjects = async () => {
   }
 }
 
-const addProject = async () => {
+const openAddForm = () => {
+  editingProjectId.value = null
+  form.value = { name: "", description: "", github_url: "", tags: "" }
+  formError.value = ""
+  showForm.value = !showForm.value
+}
+
+const editProject = (project) => {
+  editingProjectId.value = project.id
+  form.value = { name: project.name, description: project.description, github_url: project.github_url, tags: project.tags || "" }
+  formError.value = ""
+  showForm.value = true
+  window.scrollTo({ top: 0, behavior: "smooth" })
+}
+
+const saveProject = async () => {
   saving.value = true
   formError.value = ""
   try {
-    const response = await api.post("/projects", form.value)
-    projects.value.unshift(response.data)
+    const response = editingProjectId.value
+      ? await api.put(`/projects/${editingProjectId.value}`, form.value)
+      : await api.post("/projects", form.value)
+    if (editingProjectId.value) {
+      projects.value = projects.value.map((item) => item.id === editingProjectId.value ? response.data : item)
+    } else {
+      projects.value.unshift(response.data)
+    }
     form.value = { name: "", description: "", github_url: "", tags: "" }
     showForm.value = false
+    editingProjectId.value = null
   } catch (error) {
     console.error(error)
     if (error.response?.status === 401) {
@@ -89,16 +112,16 @@ onMounted(loadProjects)
           <h1>优质开源项目</h1>
           <p class="projects-intro">收集值得关注的工具、框架与灵感，让好项目更容易被发现。</p>
         </div>
-        <button v-if="isAdmin" type="button" class="project-add-button" @click="showForm = !showForm">
+        <button v-if="isAdmin" type="button" class="project-add-button" @click="openAddForm">
           <span aria-hidden="true">{{ showForm ? "×" : "+" }}</span>
           {{ showForm ? "取消添加" : "添加项目" }}
         </button>
       </header>
 
-      <form v-if="isAdmin && showForm" class="project-admin-form" @submit.prevent="addProject">
+      <form v-if="isAdmin && showForm" class="project-admin-form" @submit.prevent="saveProject">
         <div class="project-form-title">
           <div class="project-folder small">+</div>
-          <div><strong>添加开源项目</strong><p>保存后会立即出现在项目列表中</p></div>
+          <div><strong>{{ editingProjectId ? "编辑开源项目" : "添加开源项目" }}</strong><p>{{ editingProjectId ? "修改后会立即更新项目卡片" : "保存后会立即出现在项目列表中" }}</p></div>
         </div>
         <div class="project-form-grid">
           <label>项目名称<input v-model.trim="form.name" required maxlength="120" placeholder="例如：vLLM"></label>
@@ -107,7 +130,7 @@ onMounted(loadProjects)
           <label class="full">标签<input v-model.trim="form.tags" maxlength="300" placeholder="AI, RAG, Python（用逗号分隔）"></label>
         </div>
         <p v-if="formError" class="project-form-error">{{ formError }}</p>
-        <button class="project-submit" :disabled="saving">{{ saving ? "正在保存…" : "保存项目" }}</button>
+        <button class="project-submit" :disabled="saving">{{ saving ? "正在保存…" : editingProjectId ? "保存修改" : "保存项目" }}</button>
       </form>
 
       <div class="project-search-wrap">
@@ -133,7 +156,7 @@ onMounted(loadProjects)
               <div v-if="tagsFor(project).length" class="project-tags"><span v-for="tag in tagsFor(project)" :key="tag">{{ tag }}</span></div>
             </div>
           </a>
-          <button v-if="isAdmin" type="button" class="project-delete" title="删除项目" @click="deleteProject(project)">删除</button>
+          <div v-if="isAdmin" class="project-card-actions"><button type="button" class="project-edit" title="编辑项目" @click="editProject(project)">编辑</button><button type="button" class="project-delete" title="删除项目" @click="deleteProject(project)">删除</button></div>
         </article>
       </div>
     </section>
