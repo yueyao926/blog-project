@@ -2,6 +2,7 @@
 import { computed, ref, onMounted, onUnmounted } from "vue"
 import { useRouter } from "vue-router"
 import api from "../services/api"
+import { profile } from "../services/profile"
 import {
   createCategory,
   deleteCategory,
@@ -523,14 +524,14 @@ const deleteArticle = async (id) => {
           <span class="meng-deco meng-deco-3">+</span>
           <span class="meng-deco meng-deco-4">✿</span>
 
-          <div class="avatar-frame">
+          <router-link to="/about" class="avatar-frame profile-home-link" aria-label="前往 Yueyao 的个人页面">
             <img
-              src="/meng-er-avatar.png"
+              :src="profile.avatar"
               alt="Yueyao"
             />
-          </div>
+          </router-link>
 
-          <h2
+          <router-link to="/about"><h2
             class="
               font-display
               text-2xl
@@ -540,8 +541,8 @@ const deleteArticle = async (id) => {
               text-[#6b5d4d]
             "
           >
-            Yueyao
-          </h2>
+            {{ profile.name }}
+          </h2></router-link>
 
           <p
             class="
@@ -625,19 +626,21 @@ const deleteArticle = async (id) => {
         <div
           v-for="(article, index) in filteredArticles"
           :key="article.id"
-          class="glass-card article-card p-5 md:p-8 max-w-full overflow-hidden"
+          class="glass-card article-card article-card-side max-w-full overflow-hidden"
+          :class="{ 'article-card-reverse': index % 2 === 1 }"
           :style="{ animationDelay: `${index * 0.08}s` }"
         >
           <div
             v-if="article.cover_image"
-            class="overflow-hidden cover-wrap mb-6"
+            class="overflow-hidden cover-wrap article-cover-side"
           >
             <img
               :src="article.cover_image"
-              class="cover-img w-full h-44 md:h-64 object-cover"
+              class="cover-img"
             />
           </div>
 
+          <div class="article-card-body">
           <h2
             @click="router.push(`/articles/${article.id}`)"
             class="
@@ -690,7 +693,7 @@ const deleteArticle = async (id) => {
 
             <div
               v-if="isAdmin"
-              class="flex flex-wrap gap-3"
+              class="article-admin-actions"
             >
               <button
                 @click="
@@ -698,18 +701,19 @@ const deleteArticle = async (id) => {
                     `/edit/${article.id}`
                   )
                 "
-                class="btn-primary"
+                class="article-admin-action"
               >
                 编辑
               </button>
 
               <button
                 @click="deleteArticle(article.id)"
-                class="btn-danger"
+                class="article-admin-action danger"
               >
                 删除
               </button>
             </div>
+          </div>
           </div>
         </div>
       </div>

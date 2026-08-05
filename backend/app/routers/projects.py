@@ -40,6 +40,23 @@ def create_project(
     return project
 
 
+@router.put("/{project_id}", response_model=ProjectOut)
+def update_project(
+    project_id: int,
+    payload: ProjectCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
+):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="项目不存在")
+    for field, value in payload.model_dump().items():
+        setattr(project, field, value)
+    db.commit()
+    db.refresh(project)
+    return project
+
+
 @router.delete("/{project_id}")
 def delete_project(
     project_id: int,
