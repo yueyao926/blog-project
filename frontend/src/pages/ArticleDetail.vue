@@ -75,6 +75,7 @@ onMounted(async () => {
 
 <template>
   <main class="reading-page">
+    <span class="reading-marker" aria-hidden="true">JOURNAL</span>
     <div v-if="article" class="reading-shell">
       <article class="article-sheet">
         <header class="article-header">
@@ -118,5 +119,6 @@ onMounted(async () => {
         </section>
       </aside>
     </div>
+    <div v-else class="reading-loading" role="status"><span>LOADING JOURNAL</span><p>正在翻开这篇文章…</p></div>
   </main>
 </template>

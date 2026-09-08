@@ -105,9 +105,10 @@ onMounted(loadProjects)
 
 <template>
   <main class="projects-page">
+    <span class="projects-watermark" aria-hidden="true">OPEN</span>
     <section class="projects-shell">
       <header class="projects-header">
-        <div>
+        <div class="projects-title-block">
           <p class="projects-eyebrow">OPEN SOURCE · 精选收藏</p>
           <h1>优质开源项目</h1>
           <p class="projects-intro">收集值得关注的工具、框架与灵感，让好项目更容易被发现。</p>
@@ -146,7 +147,7 @@ onMounted(loadProjects)
         <span>{{ keyword ? "换个关键词试试吧。" : "管理员可以点击右上角添加第一个项目。" }}</span>
       </div>
 
-      <div v-else class="projects-grid">
+      <div v-else class="projects-grid" aria-live="polite">
         <article v-for="(project, index) in filteredProjects" :key="project.id" class="project-card" :style="{ '--delay': `${index * 55}ms` }">
           <a :href="project.github_url" target="_blank" rel="noopener noreferrer" :aria-label="`在 GitHub 查看 ${project.name}`">
             <div class="project-folder" aria-hidden="true"><span /></div>

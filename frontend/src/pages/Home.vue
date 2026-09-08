@@ -31,6 +31,7 @@ const keyword = ref("")
 const DEFAULT_HERO_IMAGE = "https://images.unsplash.com/photo-1501854140801-50d01698950b"
 const heroImage = ref(DEFAULT_HERO_IMAGE)
 const heroFileInput = ref(null)
+const heroBanner = ref(null)
 const isUpdatingHeroImage = ref(false)
 
 const selectedCategoryId = ref("")
@@ -179,17 +180,90 @@ const filteredArticles = computed(() => {
   })
 })
 
-const particles = Array.from({ length: 12 }, (_, i) => ({
-  id: i,
-  left: `${Math.random() * 100}%`,
-  size: `${Math.random() * 5 + 3}px`,
-  duration: `${Math.random() * 8 + 10}s`,
-  delay: `${Math.random() * 10}s`,
-}))
+let motionFrame = 0
+let lastMotionTime = 0
+let heroHeight = 1
+const motion = {
+  x: 0,
+  y: 0,
+  scroll: 0,
+  targetX: 0,
+  targetY: 0,
+  targetScroll: 0,
+}
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
+
+const renderHeroMotion = (time) => {
+  const dt = Math.min((time - lastMotionTime) / 1000 || 0, 1 / 30)
+  const follow = 1 - Math.exp(-7 * dt)
+  lastMotionTime = time
+
+  motion.x += (motion.targetX - motion.x) * follow
+  motion.y += (motion.targetY - motion.y) * follow
+  motion.scroll += (motion.targetScroll - motion.scroll) * follow
+
+  const hero = heroBanner.value
+  if (!hero) return
+
+  hero.style.setProperty("--hero-bg-x", `${motion.x * -14}px`)
+  hero.style.setProperty("--hero-bg-y", `${motion.y * -10 + motion.scroll * 34}px`)
+  hero.style.setProperty("--hero-copy-x", `${motion.x * 4.5}px`)
+  hero.style.setProperty("--hero-copy-y", `${motion.y * 2.2 - motion.scroll * 58}px`)
+  hero.style.setProperty("--hero-index-y", `${motion.scroll * -18}px`)
+  hero.style.setProperty("--hero-scale", String(1.07 + motion.scroll * .035))
+  hero.style.setProperty("--hero-opacity", String(1 - motion.scroll * .58))
+  hero.style.setProperty("--light-x", `${50 + motion.x * 20}%`)
+  hero.style.setProperty("--light-y", `${45 + motion.y * 16}%`)
+  const unsettled = Math.abs(motion.targetX - motion.x)
+    + Math.abs(motion.targetY - motion.y)
+    + Math.abs(motion.targetScroll - motion.scroll) > 0.002
+
+  motionFrame = unsettled ? requestAnimationFrame(renderHeroMotion) : 0
+}
+
+const requestHeroMotion = () => {
+  if (!motionFrame && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    lastMotionTime = performance.now()
+    motionFrame = requestAnimationFrame(renderHeroMotion)
+  }
+}
+
+const onHeroPointerMove = (event) => {
+  if (event.pointerType !== "mouse") return
+
+  const rect = heroBanner.value?.getBoundingClientRect()
+  if (!rect) return
+
+  motion.targetX = clamp((event.clientX - rect.left) / rect.width * 2 - 1, -1, 1)
+  motion.targetY = clamp((event.clientY - rect.top) / rect.height * 2 - 1, -1, 1)
+  requestHeroMotion()
+}
+
+const resetHeroPointer = () => {
+  motion.targetX = 0
+  motion.targetY = 0
+  requestHeroMotion()
+}
+
+const onPageScroll = () => {
+  motion.targetScroll = clamp(window.scrollY / heroHeight, 0, 1)
+  requestHeroMotion()
+}
+
+const updateHeroMetrics = () => {
+  heroHeight = heroBanner.value?.offsetHeight || 1
+  onPageScroll()
+}
 
 const fetchArticles = async () => {
-  const response = await api.get("/articles")
-  articles.value = response.data
+  try {
+    const response = await api.get("/articles")
+    articles.value = response.data
+  } catch (error) {
+    articles.value = []
+    console.warn("文章列表暂时不可用", error)
+  }
 }
 
 const fetchCategories = async () => {
@@ -202,7 +276,7 @@ const fetchCategories = async () => {
     )
 
   } catch (error) {
-    console.error(error)
+    console.warn("分类列表暂时不可用", error)
   }
 }
 
@@ -241,7 +315,7 @@ const fetchSiteSettings = async () => {
     const response = await api.get("/site-settings")
     heroImage.value = response.data.hero_image || DEFAULT_HERO_IMAGE
   } catch (error) {
-    console.error("首页图加载失败", error)
+    console.warn("首页图暂时不可用，已使用默认图片", error)
   }
 }
 
@@ -393,6 +467,9 @@ const openCategoryDrawer = () => {
 
 onMounted(async () => {
   window.addEventListener("open-category-drawer", openCategoryDrawer)
+  window.addEventListener("scroll", onPageScroll, { passive: true })
+  window.addEventListener("resize", updateHeroMetrics)
+  updateHeroMetrics()
 
   await Promise.all([
     fetchArticles(),
@@ -406,6 +483,9 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener("open-category-drawer", openCategoryDrawer)
+  window.removeEventListener("scroll", onPageScroll)
+  window.removeEventListener("resize", updateHeroMetrics)
+  cancelAnimationFrame(motionFrame)
 })
 
 const deleteArticle = async (id) => {
@@ -433,7 +513,12 @@ const deleteArticle = async (id) => {
 
 <template>
   <div class="page-bg">
-    <div class="hero-banner">
+    <div
+      ref="heroBanner"
+      class="hero-banner"
+      @pointermove="onHeroPointerMove"
+      @pointerleave="resetHeroPointer"
+    >
       <div
         class="hero-bg"
         :style="{ backgroundImage: `url('${heroImage}')` }"
@@ -441,24 +526,18 @@ const deleteArticle = async (id) => {
 
       <div class="hero-overlay"></div>
 
-      <div class="particles">
-        <span
-          v-for="p in particles"
-          :key="p.id"
-          class="particle"
-          :style="{
-            left: p.left,
-            width: p.size,
-            height: p.size,
-            animationDuration: p.duration,
-            animationDelay: p.delay,
-          }"
-        ></span>
+      <div class="hero-light" aria-hidden="true"></div>
+
+      <div class="hero-index" aria-hidden="true">
+        <span>FIELD NOTES</span>
+        <span>PERSONAL ARCHIVE</span>
       </div>
 
       <div class="hero-content">
+        <p class="hero-kicker">Writing · Making · Wandering</p>
         <h1 class="hero-title">
-          Welcome to Yueyao's Blog
+          <span>Yueyao's</span>
+          <span>Field Notes</span>
         </h1>
 
         <p class="hero-subtitle">
@@ -758,6 +837,14 @@ const deleteArticle = async (id) => {
       </div>
 
       <div class="col-span-1 lg:col-span-9 min-w-0 space-y-8">
+        <div class="article-index-heading">
+          <div>
+            <span>01 / NOTES</span>
+            <h2>最近写下的事</h2>
+          </div>
+          <p>{{ filteredArticles.length }} 篇文章</p>
+        </div>
+
         <div class="search-box w-full max-w-full">
           <svg
             class="search-icon"
@@ -871,6 +958,11 @@ const deleteArticle = async (id) => {
             </div>
           </div>
           </div>
+        </div>
+
+        <div v-if="!filteredArticles.length" class="article-empty-state">
+          <span>NO NOTES FOUND</span>
+          <p>{{ keyword ? "没有找到匹配的文章，换个关键词试试。" : "新的文字正在路上，先去别处逛逛吧。" }}</p>
         </div>
       </div>
     </div>
