@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue"
+import { computed, onMounted, onUnmounted, ref } from "vue"
 import { profile, moodOptions, currentMood, saveProfile, setTodayMood } from "../services/profile"
 
 const isAdmin = computed(() => localStorage.getItem("is_admin") === "true")
@@ -30,13 +30,78 @@ const fileToDataUrl = (event, field) => {
 }
 const startEditing = () => { draft.value = { ...profile }; editing.value = true }
 const submit = () => { saveProfile({ ...draft.value, moods: profile.moods }); editing.value = false }
+
+const profileCover = ref(null)
+let motionFrame = 0
+let lastMotionTime = 0
+let coverHeight = 1
+const motion = { x: 0, y: 0, scroll: 0, targetX: 0, targetY: 0, targetScroll: 0 }
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
+
+const renderCoverMotion = (time) => {
+  const follow = 1 - Math.exp(-7 * Math.min((time - lastMotionTime) / 1000 || 0, 1 / 30))
+  lastMotionTime = time
+  motion.x += (motion.targetX - motion.x) * follow
+  motion.y += (motion.targetY - motion.y) * follow
+  motion.scroll += (motion.targetScroll - motion.scroll) * follow
+
+  const cover = profileCover.value
+  if (!cover) return
+  cover.style.setProperty("--profile-bg-x", `${motion.x * -14}px`)
+  cover.style.setProperty("--profile-bg-y", `${motion.y * -10 + motion.scroll * 34}px`)
+  cover.style.setProperty("--profile-copy-x", `${motion.x * 4.5}px`)
+  cover.style.setProperty("--profile-copy-y", `${motion.y * 2.2 - motion.scroll * 58}px`)
+  cover.style.setProperty("--profile-index-y", `${motion.scroll * -18}px`)
+  cover.style.setProperty("--profile-scale", String(1.07 + motion.scroll * .035))
+  cover.style.setProperty("--profile-opacity", String(1 - motion.scroll * .58))
+  cover.style.setProperty("--profile-light-x", `${50 + motion.x * 20}%`)
+  cover.style.setProperty("--profile-light-y", `${45 + motion.y * 16}%`)
+
+  const unsettled = Math.abs(motion.targetX - motion.x) + Math.abs(motion.targetY - motion.y) + Math.abs(motion.targetScroll - motion.scroll) > .002
+  motionFrame = unsettled ? requestAnimationFrame(renderCoverMotion) : 0
+}
+
+const requestCoverMotion = () => {
+  if (!motionFrame && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    lastMotionTime = performance.now()
+    motionFrame = requestAnimationFrame(renderCoverMotion)
+  }
+}
+
+const onCoverPointerMove = (event) => {
+  if (event.pointerType !== "mouse") return
+  const rect = profileCover.value?.getBoundingClientRect()
+  if (!rect) return
+  motion.targetX = clamp((event.clientX - rect.left) / rect.width * 2 - 1, -1, 1)
+  motion.targetY = clamp((event.clientY - rect.top) / rect.height * 2 - 1, -1, 1)
+  requestCoverMotion()
+}
+
+const resetCoverPointer = () => { motion.targetX = 0; motion.targetY = 0; requestCoverMotion() }
+const onPageScroll = () => { motion.targetScroll = clamp(window.scrollY / coverHeight, 0, 1); requestCoverMotion() }
+const updateCoverMetrics = () => { coverHeight = profileCover.value?.offsetHeight || 1; onPageScroll() }
+
+onMounted(() => {
+  window.addEventListener("scroll", onPageScroll, { passive: true })
+  window.addEventListener("resize", updateCoverMetrics)
+  updateCoverMetrics()
+})
+
+onUnmounted(() => {
+  window.removeEventListener("scroll", onPageScroll)
+  window.removeEventListener("resize", updateCoverMetrics)
+  cancelAnimationFrame(motionFrame)
+})
 </script>
 
 <template>
   <main class="profile-page">
-    <section class="profile-cover" :style="{ backgroundImage: `url('${profile.cover}')` }">
+    <section ref="profileCover" class="profile-cover" @pointermove="onCoverPointerMove" @pointerleave="resetCoverPointer">
+      <div class="profile-cover-bg" :style="{ backgroundImage: `url('${profile.cover}')` }"></div>
       <div class="profile-cover-shade"></div>
-      <div class="profile-cover-copy"><span>ABOUT YUEYAO</span><h1>在好奇心里，慢慢生长。</h1><p>{{ profile.tagline }}</p></div>
+      <div class="profile-cover-light" aria-hidden="true"></div>
+      <div class="profile-cover-index" aria-hidden="true"><span>PORTRAIT / 01</span><span>SCROLL TO KNOW ME</span></div>
+      <div class="profile-cover-copy"><span>ABOUT YUEYAO</span><h1>在好奇心里，<br />慢慢生长。</h1><p>{{ profile.tagline }}</p></div>
     </section>
     <div class="profile-layout">
       <aside class="profile-side">
@@ -57,7 +122,7 @@ const submit = () => { saveProfile({ ...draft.value, moods: profile.moods }); ed
           <div class="calendar-grid status-calendar-grid"><span v-for="(day, index) in calendarDays" :key="index" class="status-day" :class="{ today: day === now.getDate() && calendarMonth.getMonth() === now.getMonth() && calendarMonth.getFullYear() === now.getFullYear(), recorded: moodForDay(day) }" :title="moodForDay(day)?.label || ''"><small>{{ day }}</small><b v-if="moodForDay(day)" :data-mood="moodForDay(day).value">{{ moodForDay(day).emoji }}</b></span></div>
         </section>
       </aside>
-      <section class="profile-main profile-panel">
+      <section class="profile-main profile-panel profile-story">
         <div class="profile-title-row"><div><span class="eyebrow">HELLO, NICE TO MEET YOU</span><h2>关于我</h2></div><button v-if="isAdmin && !editing" class="profile-edit-btn" @click="startEditing">编辑资料</button></div>
         <template v-if="!editing"><p class="profile-intro">{{ profile.intro }}</p><div class="profile-note"><span>最近感兴趣</span><strong>{{ profile.interests }}</strong></div><blockquote>“保持敏锐，也允许自己偶尔慢下来。”</blockquote></template>
         <form v-else class="profile-form" @submit.prevent="submit">

@@ -285,11 +285,17 @@ const createArticle = async () => {
 
     <div class="admin-page relative z-10 max-w-full px-4 md:px-0">
 
-      <div class="glass-card admin-form w-full max-w-full overflow-hidden p-4 md:p-8">
-
+      <header class="admin-hero">
+        <p>PUBLISHING DESK · PRIVATE</p>
         <h1>后台管理</h1>
+        <span>写作、整理与发布，都在同一张工作台上完成。</span>
+      </header>
 
-        <div class="space-y-5">
+      <div class="glass-card admin-form admin-editor w-full max-w-full overflow-hidden p-4 md:p-8">
+
+        <div class="admin-section-heading"><span>01</span><div><p>ARTICLE COMPOSER</p><h2>编辑新文章</h2></div></div>
+
+        <div class="admin-fields space-y-5">
 
           <div>
 
@@ -421,7 +427,7 @@ const createArticle = async () => {
 
             @click="createArticle"
 
-            class="btn-dark px-8 py-3"
+            class="btn-dark admin-publish px-8 py-3"
 
           >
 
@@ -431,11 +437,9 @@ const createArticle = async () => {
 
         </div>
 
-        <div class="glass-card mt-8 p-6">
+        <div class="admin-users-panel mt-8 p-6">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h2 class="text-xl font-bold text-[#6b5d4d]">
-              用户管理（共 {{ users.length }} 人）
-            </h2>
+            <div class="admin-section-heading compact"><span>02</span><div><p>ACCESS CONTROL</p><h2>用户管理（共 {{ users.length }} 人）</h2></div></div>
 
             <button
               type="button"

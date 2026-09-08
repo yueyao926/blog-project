@@ -52,8 +52,16 @@ const login = async () => {
 
 <template>
   <div class="page-bg auth-page">
-    <div class="auth-card glass-card">
-      <h1>登录</h1>
+    <main class="auth-stage">
+      <section class="auth-intro" aria-hidden="true">
+        <span>WELCOME BACK</span>
+        <p>Dream</p><p>Act</p><p>Succeed</p>
+        <small>继续你的阅读与记录。</small>
+      </section>
+
+      <section class="auth-card glass-card">
+      <p class="auth-kicker">MEMBER ACCESS · 01</p>
+      <h1>欢迎回来</h1>
 
       <p v-if="sessionExpired" class="auth-session-notice">
         登录状态已过期，请重新登录。
@@ -94,6 +102,7 @@ const login = async () => {
           立即注册
         </router-link>
       </p>
-    </div>
+      </section>
+    </main>
   </div>
 </template>

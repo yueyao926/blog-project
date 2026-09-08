@@ -15,14 +15,20 @@ const syncAuthState = () => {
 }
 
 const navScrolled = ref(false)
+const scrollProgress = ref(0)
 
 const onScroll = () => {
   navScrolled.value = window.scrollY > 20
+  const scrollable = document.documentElement.scrollHeight - window.innerHeight
+  scrollProgress.value = scrollable > 0
+    ? Math.min(window.scrollY / scrollable, 1)
+    : 0
 }
 
 onMounted(async () => {
   window.addEventListener("scroll", onScroll, { passive: true })
   window.addEventListener("auth-changed", syncAuthState)
+  onScroll()
 
   if (isLoggedIn.value) {
     try {
@@ -67,6 +73,11 @@ const openCategories = async () => {
       class="nav-bar"
       :class="{ scrolled: navScrolled }"
     >
+      <span
+        class="nav-progress"
+        aria-hidden="true"
+        :style="{ transform: `scaleX(${scrollProgress})` }"
+      ></span>
       <div
         class="
           max-w-7xl

@@ -50,8 +50,16 @@ const register = async () => {
 
 <template>
   <div class="page-bg auth-page">
-    <div class="auth-card glass-card">
-      <h1>注册</h1>
+    <main class="auth-stage auth-stage-register">
+      <section class="auth-intro" aria-hidden="true">
+        <span>NEW CHAPTER</span>
+        <p>Courage</p><p>Strength</p><p>Victory</p>
+        <small>从这里开始留下你的足迹。</small>
+      </section>
+
+      <section class="auth-card glass-card">
+      <p class="auth-kicker">CREATE ACCOUNT · 02</p>
+      <h1>加入这里</h1>
 
       <div class="form-group">
         <label>用户名</label>
@@ -98,6 +106,7 @@ const register = async () => {
           去登录
         </router-link>
       </p>
-    </div>
+      </section>
+    </main>
   </div>
 </template>
