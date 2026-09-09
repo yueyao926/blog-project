@@ -1,164 +1,177 @@
 <template>
-  <div class="npc" @click="handleClick">
-    <img
-      :src="currentImg"
-      class="npc-img"
-      :style="{
-        transform: `translate(${offsetX}px, ${offsetY}px)`
-      }"
-    />
+  <div
+    class="npc"
+    :class="{ 'is-ready': isReady }"
+    @click="handleClick"
+    @mouseenter="handleMouseEnter"
+  >
+    <div ref="positionLayer" class="panda-position">
+      <Transition name="bubble">
+        <div v-if="message" class="bubble" role="status">
+          {{ message }}
+        </div>
+      </Transition>
 
-    <div v-if="message" class="bubble">
-      {{ message }}
+      <div class="panda-interaction" :class="{ 'is-bouncing': isBouncing }">
+        <Transition name="panda-swap">
+          <img
+            :key="mood"
+            :src="images[mood]"
+            class="npc-img"
+            alt="小熊猫萌二"
+            draggable="false"
+          />
+        </Transition>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue"
+import { onMounted, onUnmounted, ref } from "vue"
 
-// ================= 图片 =================
-import idle from "../assets/panda_idle.png"
-import happy from "../assets/panda_happy.png"
 import angry from "../assets/panda_angry.png"
+import happy from "../assets/panda_happy.png"
+import hello from "../assets/panda_hello.png"
+import idle from "../assets/panda_idle.png"
+import sad from "../assets/panda_sad.png"
 import sleepy from "../assets/panda_sleepy.png"
 
-const images = { idle, happy, angry, sleepy }
+const images = { idle, happy, angry, sleepy, sad, hello }
 
-// ================= 状态 =================
-const currentImg = ref(idle)
+const isReady = ref(false)
+const isBouncing = ref(false)
 const message = ref("")
 const mood = ref("idle")
+const positionLayer = ref(null)
 
-// ================= 情绪值 =================
-const emotion = ref(50)
-
-// ================= 动画 =================
-const offsetX = ref(0)
-const offsetY = ref(0)
-
+let emotion = 50
+let isInteracting = false
+let clickCount = 0
 let targetX = 0
 let targetY = 0
+let currentX = 0
+let currentY = 0
+let animationFrame = 0
+let bounceTimer = 0
+let clickTimer = 0
+let moodTimer = 0
+let sceneTimer = 0
+let helloCooldownUntil = 0
 
-// ================= 控制 =================
-const canClick = ref(true)
+function setScene(nextMood, nextMessage = "", duration = 0) {
+  window.clearTimeout(sceneTimer)
+  mood.value = nextMood
+  message.value = nextMessage
+  isInteracting = duration > 0
 
-// ================= 连点检测（生气触发核心） =================
-const clickCount = ref(0)
-let clickTimer = null
-
-// ================= 文案 =================
-const messages = {
-  idle: "好好学习，天天向上！",
-  happy: "嘿嘿！是找我玩吗？",
-  angry: "别戳我！！",
-  sleepy: "我困了…"
-}
-
-// ================= 设置状态（唯一入口） =================
-function setMood(m) {
-  mood.value = m
-  currentImg.value = images[m]
-}
-
-// ================= 点击交互（触发型设计） =================
-function handleClick() {
-  if (!canClick.value) return
-  canClick.value = false
-
-  // ===== 连点计数 =====
-  clickCount.value++
-
-  clearTimeout(clickTimer)
-  clickTimer = setTimeout(() => {
-    clickCount.value = 0
-  }, 1500)
-
-  // ===== 生气触发条件 =====
-  if (clickCount.value >= 5) {
-    emotion.value = 0
-    setMood("angry")
-    message.value = "你别一直戳我！！"
-
-    setTimeout(() => {
+  if (duration) {
+    sceneTimer = window.setTimeout(() => {
+      isInteracting = false
       message.value = ""
-      canClick.value = true
-    }, 1200)
+      applyAmbientMood()
+    }, duration)
+  }
+}
 
+function applyAmbientMood() {
+  if (isInteracting) return
+  mood.value = emotion < 18 ? "sleepy" : "idle"
+}
+
+function bounce() {
+  window.clearTimeout(bounceTimer)
+  isBouncing.value = false
+  requestAnimationFrame(() => {
+    isBouncing.value = true
+    bounceTimer = window.setTimeout(() => {
+      isBouncing.value = false
+    }, 320)
+  })
+}
+
+function handleClick() {
+  clickCount += 1
+  window.clearTimeout(clickTimer)
+  clickTimer = window.setTimeout(() => {
+    clickCount = 0
+  }, 900)
+
+  if (clickCount >= 5) {
+    clickCount = 0
+    emotion = 0
+    setScene("angry", "你别一直戳我！！", 1500)
     return
   }
 
-  // ===== 普通点击 =====
-  emotion.value += 10
-
-  setMood("happy")
-  message.value = messages.happy
-
-  // 轻微弹跳反馈
-  offsetY.value -= 10
-  setTimeout(() => {
-    offsetY.value = 0
-  }, 150)
-
-  setTimeout(() => {
-    message.value = ""
-    canClick.value = true
-  }, 800)
+  emotion = Math.min(100, emotion + 10)
+  bounce()
+  setScene("happy", "嘿嘿！是找我玩吗？", 1000)
 }
 
-// ================= 鼠标跟随 =================
-function handleMouseMove(e) {
-  const cx = window.innerWidth / 2
-  const cy = window.innerHeight / 2
+function handleMouseEnter() {
+  if (isInteracting || Date.now() < helloCooldownUntil) return
+  helloCooldownUntil = Date.now() + 12000
+  setScene("hello", "嗨，你来啦！", 1300)
+}
 
-  targetX = (e.clientX - cx) * 0.08
-  targetY = (e.clientY - cy) * 0.08
+function handleMouseMove(event) {
+  targetX = (event.clientX / window.innerWidth - 0.5) * 18
+  targetY = (event.clientY / window.innerHeight - 0.5) * 12
 
-  // ===== 距离检测（靠太近会紧张）=====
-  const dx = window.innerWidth - e.clientX
-  const dy = window.innerHeight - e.clientY
-  const dist = Math.sqrt(dx * dx + dy * dy)
+  const distanceFromPet = Math.hypot(
+    window.innerWidth - event.clientX,
+    window.innerHeight - event.clientY
+  )
 
-  if (dist < 150 && emotion.value < 40) {
-    setMood("angry")
-    message.value = "别吵我睡觉！"
-    setTimeout(() => {
-      message.value = ""
-    }, 1200)
+  if (distanceFromPet < 150 && emotion < 35 && !isInteracting) {
+    setScene("sad", "陪陪我嘛……", 1300)
   }
 }
 
-// ================= 平滑动画 =================
-function animate() {
-  offsetX.value += (targetX - offsetX.value) * 0.12
-  offsetY.value += (targetY - offsetY.value) * 0.12
+function animatePosition() {
+  currentX += (targetX - currentX) * 0.1
+  currentY += (targetY - currentY) * 0.1
 
-  requestAnimationFrame(animate)
+  if (positionLayer.value) {
+    positionLayer.value.style.transform =
+      `translate3d(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px, 0)`
+  }
+
+  animationFrame = requestAnimationFrame(animatePosition)
 }
 
-// ================= 情绪衰减（只改变状态，不说话） =================
-let timer = null
+function preloadImages() {
+  return Promise.allSettled(
+    Object.values(images).map((src) => new Promise((resolve) => {
+      const image = new Image()
+      image.onload = resolve
+      image.onerror = resolve
+      image.src = src
+    }))
+  )
+}
 
-onMounted(() => {
-  window.addEventListener("mousemove", handleMouseMove)
-  animate()
+onMounted(async () => {
+  window.addEventListener("mousemove", handleMouseMove, { passive: true })
+  animationFrame = requestAnimationFrame(animatePosition)
 
-  timer = setInterval(() => {
-    emotion.value -= 3
+  await preloadImages()
+  isReady.value = true
 
-    if (emotion.value < 30) {
-      setMood("sleepy")
-    } else if (emotion.value > 70) {
-      setMood("happy")
-    } else {
-      setMood("idle")
-    }
-  }, 4000)
+  moodTimer = window.setInterval(() => {
+    emotion = Math.max(0, emotion - 3)
+    applyAmbientMood()
+  }, 5000)
 })
 
 onUnmounted(() => {
   window.removeEventListener("mousemove", handleMouseMove)
-  clearInterval(timer)
+  cancelAnimationFrame(animationFrame)
+  window.clearInterval(moodTimer)
+  window.clearTimeout(bounceTimer)
+  window.clearTimeout(clickTimer)
+  window.clearTimeout(sceneTimer)
 })
 </script>
 
@@ -168,38 +181,102 @@ onUnmounted(() => {
   right: 30px;
   bottom: 30px;
   z-index: 999999;
-  filter: drop-shadow(0 10px 14px rgba(0,0,0,0.2));
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.2));
+  transition: opacity 180ms ease;
+}
+
+.npc.is-ready {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.panda-position {
+  position: relative;
+  will-change: transform;
+}
+
+.panda-interaction {
+  position: relative;
+  cursor: pointer;
+  transition: transform 160ms ease;
+}
+
+.panda-interaction:hover {
+  transform: scale(1.04);
+}
+
+.panda-interaction.is-bouncing {
+  animation: bounce 320ms ease-out;
 }
 
 .npc-img {
+  display: block;
   width: 150px;
-  cursor: pointer;
-  animation: breathe 2.5s ease-in-out infinite;
-  transition: transform 0.15s ease;
-}
-
-.npc-img:hover {
-  transform: scale(1.08);
+  height: 150px;
+  object-fit: contain;
+  user-select: none;
+  animation: breathe 2.6s ease-in-out infinite;
 }
 
 .bubble {
   position: absolute;
-  bottom: 110px;
-  right: 0;
-
+  right: 8px;
+  bottom: 138px;
+  padding: 7px 11px;
+  border-radius: 12px;
   background: white;
-  padding: 6px 10px;
-  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  color: #312b27;
   font-size: 13px;
-
-  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  line-height: 1.4;
   white-space: nowrap;
 }
 
-/* 呼吸感 */
+.bubble::after {
+  position: absolute;
+  right: 22px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  background: white;
+  content: "";
+  transform: rotate(45deg);
+}
+
+.bubble-enter-active,
+.bubble-leave-active,
+.panda-swap-enter-active,
+.panda-swap-leave-active {
+  transition: opacity 120ms ease;
+}
+
+.bubble-enter-from,
+.bubble-leave-to {
+  opacity: 0;
+  transform: translateY(5px) scale(0.96);
+}
+
+.panda-swap-enter-from,
+.panda-swap-leave-to {
+  opacity: 0;
+}
+
+.panda-swap-leave-active {
+  position: absolute;
+  inset: 0;
+}
+
 @keyframes breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.025); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-12px) scale(1.04, 0.97); }
+  70% { transform: translateY(2px) scale(0.99, 1.02); }
 }
 
 @media (max-width: 768px) {
@@ -209,13 +286,28 @@ onUnmounted(() => {
   }
 
   .npc-img {
-    width: 90px;
+    width: 104px;
+    height: 104px;
   }
 
   .bubble {
-    bottom: 72px;
+    right: 0;
+    bottom: 96px;
     max-width: 70vw;
     white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .npc,
+  .panda-interaction,
+  .npc-img,
+  .bubble-enter-active,
+  .bubble-leave-active,
+  .panda-swap-enter-active,
+  .panda-swap-leave-active {
+    animation: none;
+    transition: none;
   }
 }
 </style>
