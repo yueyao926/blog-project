@@ -98,21 +98,20 @@ function handleClick() {
   }, 900)
 
   if (clickCount >= 5) {
-    clickCount = 0
     emotion = 0
-    setScene("angry", "你别一直戳我！！", 1500)
+    setScene("angry", "你别一直戳我！！", 3000)
     return
   }
 
   emotion = Math.min(100, emotion + 10)
   bounce()
-  setScene("happy", "嘿嘿！是找我玩吗？", 1000)
+  setScene("happy", "嘿嘿！是找我玩吗？", 3000)
 }
 
 function handleMouseEnter() {
   if (isInteracting || Date.now() < helloCooldownUntil) return
   helloCooldownUntil = Date.now() + 12000
-  setScene("hello", "嗨，你来啦！", 1300)
+  setScene("hello", "嗨，你来啦！", 3000)
 }
 
 function handleMouseMove(event) {
@@ -125,7 +124,7 @@ function handleMouseMove(event) {
   )
 
   if (distanceFromPet < 150 && emotion < 35 && !isInteracting) {
-    setScene("sad", "陪陪我嘛……", 1300)
+    setScene("sad", "陪陪我嘛……", 3000)
   }
 }
 
