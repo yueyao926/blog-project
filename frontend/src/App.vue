@@ -5,6 +5,7 @@ import PandaPet from "./components/PandaPet.vue";
 import api from "./services/api"
 
 const router = useRouter()
+const isHome = computed(() => router.currentRoute.value.path === "/")
 
 const isLoggedIn = ref(!!localStorage.getItem("token"))
 const isAdmin = ref(localStorage.getItem("is_admin") === "true")
@@ -58,8 +59,8 @@ const logout = () => {
 }
 
 const openCategories = async () => {
-  if (router.currentRoute.value.path !== "/") {
-    await router.push("/")
+  if (router.currentRoute.value.path !== "/articles") {
+    await router.push("/articles")
     await nextTick()
   }
 
@@ -70,6 +71,7 @@ const openCategories = async () => {
 <template>
   <div>
     <nav
+      v-if="!isHome"
       class="nav-bar"
       :class="{ scrolled: navScrolled }"
     >
@@ -117,6 +119,10 @@ const openCategories = async () => {
             class="nav-link"
           >
             首页
+          </router-link>
+
+          <router-link to="/articles" class="nav-link">
+            文章
           </router-link>
 
           <button
@@ -173,10 +179,10 @@ const openCategories = async () => {
       </div>
     </nav>
 
-    <div class="pt-24 sm:pt-16">
+    <div :class="{ 'pt-24 sm:pt-16': !isHome }">
       <router-view />
     </div>
 
-    <PandaPet />
+    <PandaPet v-if="!isHome" />
   </div>
 </template>
